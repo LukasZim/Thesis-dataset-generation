@@ -1,0 +1,10 @@
+numpy==1.23
+tetgen~=0.6.4
+scikit-image
+polyscope~=2.2.1
+scipy~=1.13.1
+gpytoolbox==0.0.1
+laspy~=2.5.4
+open3d~=0.18.0
+igl~=2.2.1
+mosek~=10.2.1
