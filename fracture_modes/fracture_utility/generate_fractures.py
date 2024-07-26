@@ -42,19 +42,19 @@ def generate_fractures(input_dir,num_modes=20,num_impacts=80,output_dir=None,ver
     """
 
     # directory = os.fsencode(input_dir)
-    np.random.seed(0)
+    np.random.seed(0) #set seed
     # for file in os.listdir(directory):
     filename = input_dir
     t0 = time.time()
     #try:
     t00 = time.time()
-    v_fine, f_fine = igl.read_triangle_mesh(filename)
+    v_fine, f_fine = igl.read_triangle_mesh(filename) # load vertices of fine mesh
     # Let's normalize it so that parameter choice makes sense
-    v_fine = gpytoolbox.normalize_points(v_fine)
+    v_fine = gpytoolbox.normalize_points(v_fine)    # normalize vertices
     t01 = time.time()
     reading_time = t01-t00
     if verbose:
-        print("Read shape in",round(reading_time,3),"seconds.")
+        print("Read shape in",round(reading_time,3),"seconds.") # print timing
     # Build cage mesh (this may actually be the bottleneck...)
     t10 = time.time()
     v, f = lazy_cage(v_fine,f_fine,num_faces=cage_size,grid_size=256)
@@ -97,6 +97,7 @@ def generate_fractures(input_dir,num_modes=20,num_impacts=80,output_dir=None,ver
         print("Modes computed in ",round(mode_time,3),"seconds.")
     # # Generate random contact points on the surface
     B,FI = igl.random_points_on_mesh(1000*num_impacts,v,f)
+    FI[FI >= len(f)] = len(f)-1 # fixes bug inside pyigl library which also includes indices equal to len(faces)
     B = np.vstack((B[:,0],B[:,0],B[:,0],B[:,1],B[:,1],B[:,1],B[:,2],B[:,2],B[:,2])).T
     P = B[:,0:3]*v[f[FI,0],:] + B[:,3:6]*v[f[FI,1],:] + B[:,6:9]*v[f[FI,2],:]
     sigmas = np.random.rand(1000*num_impacts)*1000
