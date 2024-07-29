@@ -94,29 +94,41 @@ def generate_fracture(v_fine, f_fine, num_faces=100, output_folder="./results"):
     return modes
 
 
-def create_modes(v_fine, f_fine, num_faces=100, output_folder="./results"):
+def create_modes(v_fine, f_fine, num_faces=400, output_folder="./results"):
     v_fine = np.asarray(v_fine)
     f_fine = np.asarray(f_fine)
     v_fine = gpytoolbox.normalize_points(v_fine)
 
     # This is the "cage mesh", i.e. the coarser mesh that we will tetrahedralize and use for the physical simulation
-    v, f = lazy_cage(v_fine, f_fine, num_faces=num_faces)
+    v, f = lazy_cage(v_fine, f_fine, num_faces=num_faces, grid_size=256)
+
+    print("created lazy_cage")
 
     # Tetrahedralize
     tgen = tetgen.TetGen(v, f)
-    nodes, elements = tgen.tetrahedralize()
+    nodes, elements = tgen.tetrahedralize(minratio=1.5)
+
+    print("created tetrahedralize")
 
     # Initialize fracture mode class
     modes = fracture.fracture_modes(nodes, elements)
 
+    print("created modes")
+
     # Set parameters for call to fracture modes
-    params = fracture.fracture_modes_parameters(num_modes=50, verbose=True, d=3)
+    params = fracture.fracture_modes_parameters(num_modes=20, verbose=False, d=3)
+
+    print("set params")
 
     # Compute fracture modes
     modes.compute_modes(parameters=params)
 
+    print("inserted params")
+
     # We need to precompute some stuff that we will only need to do once
     modes.impact_precomputation(v_fine=v_fine, f_fine=f_fine)
+
+    print("precomputed impacts")
 
     # Optionally, you can use this to save each mode's segmentation in the current directory
     # modes.write_segmented_modes(output_folder + "/output_modes", pieces=True)
@@ -143,7 +155,7 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
         direction = np.array([1.0, 0.0, 0.0])
         # direction =  -np.copy(contact_point) / np.linalg.norm(np.copy(contact_point))
         modes.impact_projection(contact_point=contact_point, direction=direction, threshold=sigmas[i],
-                                num_modes_used=50)
+                                num_modes_used=20)
         min_volume = volume_constraint * total_vol / (modes.n_pieces_after_impact)
         current_min_volume = total_vol
         for j in range(modes.n_pieces_after_impact):
@@ -152,8 +164,8 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
         # if verbose:
         #     print("Impact simulation: ",round(t401-t400,3),"seconds.")
         new = not (modes.piece_labels_after_impact.tolist() in all_labels.T.tolist())
-        print(modes.piece_labels_after_impact.tolist() in all_labels.T.tolist())
-        # print(modes.n_pieces_after_impact > 1, modes.n_pieces_after_impact < 100, new, valid_volume)
+        # print(modes.piece_labels_after_impact.tolist() in all_labels.T.tolist())
+        print(modes.n_pieces_after_impact > 1, modes.n_pieces_after_impact < 100, new, valid_volume)
         if 1 < modes.n_pieces_after_impact < 100 and new and valid_volume:
             write_to_file(modes, output_folder=category_name, dataset_name=dataset_name, index=running_num, pcd=pcd,
                           contact_point=contact_point, direction=direction, mesh=mesh)
