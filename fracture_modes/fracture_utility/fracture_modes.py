@@ -302,8 +302,8 @@ class fracture_modes:
         self.impact_projected = True
         self.t_impact = round(toc(silence=True),5) # Save and print runtime
         if self.verbose:
-            print("Impact projection: ", self.t_impact," seconds. Produced",self.n_pieces_after_impact, "pieces.")
-        
+            # print("Impact projection: ", self.t_impact," seconds. Produced",self.n_pieces_after_impact, "pieces.")
+            None
         # Still there's a little more information we may want to gather outside of the strict impact projection to display our fracture.
 
         # Now that we know per-piece labels, we can transfer this labels to tets

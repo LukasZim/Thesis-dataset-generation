@@ -122,6 +122,7 @@ def generate_fractures(input_dir,num_modes=20,num_impacts=80,output_dir=None,ver
         #     print("Impact simulation: ",round(t401-t400,3),"seconds.")
         new = not (modes.piece_labels_after_impact.tolist() in all_labels.T.tolist())
         #print(modes.piece_labels_after_impact.tolist() in all_labels.T.tolist())
+
         if (modes.n_pieces_after_impact>1 and modes.n_pieces_after_impact<100 and new and valid_volume):
             all_labels[:,running_num] = modes.piece_labels_after_impact
             write_output_name = os.path.join(output_dir,"fractured_") +  str(running_num)
