@@ -165,7 +165,7 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
         #     print("Impact simulation: ",round(t401-t400,3),"seconds.")
         new = not (modes.piece_labels_after_impact.tolist() in all_labels.T.tolist())
         # print(modes.piece_labels_after_impact.tolist() in all_labels.T.tolist())
-        print(modes.n_pieces_after_impact > 1, modes.n_pieces_after_impact < 100, new, valid_volume)
+        # print(modes.n_pieces_after_impact > 1, modes.n_pieces_after_impact < 100, new, valid_volume)
         if 1 < modes.n_pieces_after_impact < 100 and new and valid_volume:
             write_to_file(modes, output_folder=category_name, dataset_name=dataset_name, index=running_num, pcd=pcd,
                           contact_point=contact_point, direction=direction, mesh=mesh)
@@ -221,7 +221,7 @@ def write_to_file(modes, output_folder, dataset_name, index, pcd, contact_point,
     #TODO: write impulse info to file or append it to pointcloud data
     impulse_path = os.path.join(dataset_name, output_folder, "impulse_info", str(index) + ".imp")
     with open(impulse_path, "w") as f:
-        print(impulse_info)
+        # print(impulse_info)
         f.write(f"{impulse_info[0]} {impulse_info[1]} {impulse_info[2]} {impulse_info[3]} {impulse_info[4]} {impulse_info[5]}\n")
     #TODO: (optional) create train_test_split files
 
