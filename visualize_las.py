@@ -77,12 +77,12 @@ def find_scipy_mapping(pointcloud, fracture_modes, mesh):
     start_time = time.time()
     pointcloud_points = np.asarray(pointcloud.points)
     mesh_points = fracture_modes.fine_vertices
-    print(np.max(pointcloud_points, axis=0))
-    print(np.min(pointcloud_points, axis=0))
-    print(np.max(mesh_points, axis=0))
-    print(np.min(mesh_points, axis=0))
-    print(np.max(mesh.vertices, axis=0))
-    print(np.min(mesh.vertices, axis=0))
+    # print(np.max(pointcloud_points, axis=0))
+    # print(np.min(pointcloud_points, axis=0))
+    # print(np.max(mesh_points, axis=0))
+    # print(np.min(mesh_points, axis=0))
+    # print(np.max(mesh.vertices, axis=0))
+    # print(np.min(mesh.vertices, axis=0))
     pcd_min = np.min(pointcloud_points, axis=0)
     pcd_max = np.max(pointcloud_points, axis=0)
     mesh_min = np.min(mesh_points, axis=0)
@@ -92,11 +92,11 @@ def find_scipy_mapping(pointcloud, fracture_modes, mesh):
     _, indices = kd_tree_mesh2.query(pointcloud_points)
 
     labels = fracture_modes.fine_vertex_labels_after_impact[indices]
-    print(np.unique(fracture_modes.fine_vertex_labels_after_impact, return_counts=True))
-    print(np.unique(labels, return_counts=True))
+    # print(np.unique(fracture_modes.fine_vertex_labels_after_impact, return_counts=True))
+    # print(np.unique(labels, return_counts=True))
     # closest_points = mesh_points[indices]
-    print(time.time() - start_time)
-    return np.arange(0, len(labels)), labels
+    # print(time.time() - start_time)
+    return np.arange(0, len(labels)), labels, mesh_points
 
 
 def get_colours_list():

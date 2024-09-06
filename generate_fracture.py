@@ -97,7 +97,9 @@ def generate_fracture(v_fine, f_fine, num_faces=100, output_folder="./results"):
 def create_modes(v_fine, f_fine, num_faces=400, output_folder="./results"):
     v_fine = np.asarray(v_fine)
     f_fine = np.asarray(f_fine)
+    print("v_fine", len(v_fine))
     v_fine = gpytoolbox.normalize_points(v_fine)
+    print("v_fine", len(v_fine))
 
     # This is the "cage mesh", i.e. the coarser mesh that we will tetrahedralize and use for the physical simulation
     v, f = lazy_cage(v_fine, f_fine, num_faces=num_faces, grid_size=256)
@@ -127,7 +129,8 @@ def create_modes(v_fine, f_fine, num_faces=400, output_folder="./results"):
 
     # We need to precompute some stuff that we will only need to do once
     modes.impact_precomputation(v_fine=v_fine, f_fine=f_fine)
-
+    print(len(modes.fine_vertices))
+    print(len(v))
     print("precomputed impacts")
 
     # Optionally, you can use this to save each mode's segmentation in the current directory
@@ -152,10 +155,10 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
     for i in range(P.shape[0]):
         num_tries+=1
         contact_point = P[i, :]
-        direction = np.array([1.0, 0.0, 0.0])
+        direction = np.mean(modes.fine_vertices)-contact_point
         # direction =  -np.copy(contact_point) / np.linalg.norm(np.copy(contact_point))
         modes.impact_projection(contact_point=contact_point, direction=direction, threshold=sigmas[i],
-                                num_modes_used=20)
+                                num_modes_used=30)
         min_volume = volume_constraint * total_vol / (modes.n_pieces_after_impact)
         current_min_volume = total_vol
         for j in range(modes.n_pieces_after_impact):
@@ -170,7 +173,7 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
             write_to_file(modes, output_folder=category_name, dataset_name=dataset_name, index=running_num, pcd=pcd,
                           contact_point=contact_point, direction=direction, mesh=mesh)
             running_num += 1
-            print(running_num)
+            print("running_num: ", running_num)
             print("after this amount of tries: ", num_tries)
             num_tries = 0
             # all_labels[:, running_num] = modes.piece_labels_after_impact
@@ -190,39 +193,66 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
 def write_to_file(modes, output_folder, dataset_name, index, pcd, contact_point, direction, mesh):
     if not os.path.exists(dataset_name):
         os.makedirs(dataset_name)
-    if not os.path.exists(os.path.join(dataset_name, output_folder)):
-        os.makedirs(os.path.join(dataset_name, output_folder))
-        os.makedirs(os.path.join(dataset_name, output_folder, "points"))
-        os.makedirs(os.path.join(dataset_name, output_folder, "points_label"))
-        os.makedirs(os.path.join(dataset_name, output_folder, "impulse_info"))
+    # if not os.path.exists(os.path.join(dataset_name, output_folder)):
+    os.makedirs(os.path.join(dataset_name, output_folder), exist_ok=True)
+    os.makedirs(os.path.join(dataset_name, output_folder, "points"), exist_ok=True)
+    os.makedirs(os.path.join(dataset_name, output_folder, "points_label"), exist_ok=True)
+    os.makedirs(os.path.join(dataset_name, output_folder, "impulse_info"), exist_ok=True)
+    os.makedirs(os.path.join(dataset_name, output_folder, "mesh"), exist_ok=True)
+    os.makedirs(os.path.join(dataset_name, output_folder, "scaled_mesh"), exist_ok=True)
 
-    #TODO: retrieve pointcloud
+    #retrieve pointcloud
     pointcloud = pcd
 
-    #TODO: write pointcloud to .ply file
+    # write pointcloud to .ply file
     pcd_path = os.path.join(dataset_name, output_folder, "points", str(index) + ".pcd")
     with open(pcd_path, "w") as f:
         for point in np.asarray(pcd.points):
             f.write(f"{point[0]} {point[1]} {point[2]}\n")
 
-    #TODO: retrieve segmentation
-    _, labels = find_scipy_mapping(pointcloud, modes, mesh)
+    #retrieve segmentation
+    _, labels, scaled_vertices = find_scipy_mapping(pointcloud, modes, mesh)
 
-    #TODO: write segmentation to .seg file
+    #write segmentation to .seg file
     seg_path = os.path.join(dataset_name, output_folder, "points_label", str(index) + ".seg")
     with open(seg_path, "w") as f:
         for label in labels:
             f.write(f"{label}\n")
 
-    #TODO: retrieve impulse info
+    #retrieve impulse info
 
     impulse_info = np.concatenate((contact_point, direction))
 
-    #TODO: write impulse info to file or append it to pointcloud data
+    #write impulse info to file or append it to pointcloud data
     impulse_path = os.path.join(dataset_name, output_folder, "impulse_info", str(index) + ".imp")
+    pcd_min = np.min(pcd.points, axis=0)
+    pcd_max = np.max(pcd.points, axis=0)
+    mesh_min = np.min(modes.fine_vertices, axis=0)
+    mesh_max = np.max(modes.fine_vertices, axis=0)
+    contact_point = (contact_point - mesh_min) / (mesh_max - mesh_min) * (pcd_max - pcd_min) + pcd_min
+
     with open(impulse_path, "w") as f:
         # print(impulse_info)
-        f.write(f"{impulse_info[0]} {impulse_info[1]} {impulse_info[2]} {impulse_info[3]} {impulse_info[4]} {impulse_info[5]}\n")
-    #TODO: (optional) create train_test_split files
+        f.write(f"{contact_point[0]} {contact_point[1]} {contact_point[2]} {impulse_info[3]} {impulse_info[4]} {impulse_info[5]}\n")
 
-    #TODO: (optional) update synsetoffset2category.txt file
+    mesh_path = os.path.join(dataset_name, output_folder, "mesh", str(index) + ".mesh")
+    with open(mesh_path, "w") as f:
+        for vertex in mesh.vertices:
+            f.write(f"{vertex[0]} {vertex[1]} {vertex[2]}\n")
+
+        f.write("\n")
+
+        for face in mesh.triangles:
+            f.write(f"{face[0]} {face[1]} {face[2]}\n")
+
+
+    scaled_mesh_path = os.path.join(dataset_name, output_folder, "scaled_mesh", str(index) + ".mesh")
+    with open(scaled_mesh_path, "w") as f:
+        for vertex in scaled_vertices:
+            f.write(f"{vertex[0]} {vertex[1]} {vertex[2]}\n")
+
+        f.write("\n")
+
+        for face in modes.fine_triangles:
+            f.write(f"{face[0]} {face[1]} {face[2]}\n")
+

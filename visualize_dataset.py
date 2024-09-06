@@ -1,7 +1,7 @@
 import open3d
 import open3d as o3d
 import numpy as np
-
+from numpy.core.numeric import True_
 
 index = 1
 
@@ -36,6 +36,8 @@ def get_pointcloud_from_file(index, datasetName="bunny"):
     points = []
     for line in open("dataset/" + datasetName + "/points/" + filename_points):
         points.append(tuple(map(lambda x: float(x), line.split(" "))))
+    normalization_direction = points[0] - np.mean(points, axis=0)
+    # print("Normalization direction: ", normalization_direction)
     points = points - np.mean(points, axis=0)
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
@@ -53,7 +55,7 @@ def get_pointcloud_from_file(index, datasetName="bunny"):
     colours = colors_list[labels]
     pcd.colors = o3d.utility.Vector3dVector(colours)
 
-    return pcd
+    return pcd, normalization_direction
 
 def get_impulse_from_file(index, datasetName="bunny"):
     filename_impulses = str(index) + ".imp"
@@ -61,27 +63,55 @@ def get_impulse_from_file(index, datasetName="bunny"):
     for line in open("dataset/" + datasetName + "/impulse_info/" + filename_impulses):
         impulse_info = list(map(lambda x: float(x), line.split(" ")))
     location = [impulse_info[0], impulse_info[1], impulse_info[2]]
-    arrow_direction = [impulse_info[3], impulse_info[4], impulse_info[5]]
-    location = np.array(location) - np.array(arrow_direction)
-    arrow = o3d.geometry.TriangleMesh.create_arrow(
-        cylinder_radius=0.005,
-        cone_radius=0.01,
-        cylinder_height=0.05,
-        cone_height=0.02
-    )
-    # arrow.rotate(arrow.get_rotation_matrix_from_xyz(np.arctan2(arrow_direction[1], arrow_direction[0])))
-    arrow.translate(location)
-    return arrow
+    direction = [impulse_info[3], impulse_info[4], impulse_info[5]]
+
+    print(location)
+    print(direction)
+    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=.002, resolution=20)
+    sphere.translate(location)
+
+    return sphere
+
+def get_mesh_from_file(index, scaled_mesh = False, datasetName = "bunny"):
+    filename_mesh = str(index) + ".mesh"
+    vertices = []
+    faces = []
+    done_with_vertices = False
+    for line in open("dataset/" + datasetName + "/" + ("scaled_" if scaled_mesh else "")+ "mesh/" + filename_mesh):
+        if line == "\n":
+            done_with_vertices = True
+            continue
+        if not done_with_vertices:
+            vertices.append(list(map(lambda x: float(x), line.split(" "))))
+        else:
+            faces.append(list(map(lambda x: int(x), line.split(" "))))
+
+    mesh = o3d.geometry.TriangleMesh()
+    mesh.vertices = o3d.utility.Vector3dVector(vertices)
+    mesh.triangles = o3d.utility.Vector3iVector(faces)
+    mesh.compute_vertex_normals()
+    return mesh
+
+
 
 
 def load_new_model(vis):
     global index
     vis.clear_geometries()
     print("Starting the visualization of the dataset")
-    pcd = get_pointcloud_from_file(index)
-    impulse_arrow = get_impulse_from_file(index)
+    pcd, norm_direction = get_pointcloud_from_file(index)
+    sphere = get_impulse_from_file(index)
+    # sphere.translate(norm_direction)
+    mesh = get_mesh_from_file(index)
+    scaled_mesh = get_mesh_from_file(index, scaled_mesh=True)
     print("Retrieved pointcloud")
     vis.add_geometry(pcd)
+    vis.add_geometry(sphere)
+    vis.add_geometry(mesh)
+    vis.add_geometry(scaled_mesh)
+
+    view_ctl = vis.get_view_control()
+    view_ctl.set_zoom(2)
 
 def plus_one(vis):
     global index
@@ -98,12 +128,11 @@ def minus_one(vis):
 if __name__ == "__main__":
     print("Starting the visualization of the dataset")
     # global index
-    pcd = get_pointcloud_from_file(index)
-    impulse_arrow = get_impulse_from_file(index)
+
     print("Retrieved pointcloud")
     vis = o3d.visualization.VisualizerWithKeyCallback()
     vis.create_window()
-    vis.add_geometry(pcd)
+    load_new_model(vis)
     vis.register_key_callback(ord("1"), minus_one)
     vis.register_key_callback(ord("2"), plus_one)
     vis.run()

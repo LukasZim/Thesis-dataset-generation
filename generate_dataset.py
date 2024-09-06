@@ -133,11 +133,17 @@ if __name__ == "__main__":
     print("downsampled point cloud")
 
     mesh, densities = extract_mesh_from_point_cloud(pcd)
+
     print("extracted mesh from point cloud")
 
     # sys.stdout = io.StringIO()
     modes,v,f = generate_fracture.create_modes(mesh.vertices, mesh.triangles)
     # sys.stdout = sys.__stdout__
+    print("mesh.vertices = ", len(mesh.vertices))
+    # print("mesh.faces = ", len(mesh.triangles))
+    # print("pcd.points = ", len(pcd.points))
+    print("modes.fine_vertices = ", len(modes.fine_vertices))
+    # print("modes.fine_faces = ", len(modes.fine_triangles))
     print("done generating modes")
 
     generate_fracture.generate_multiple_fractures(modes, num_impacts=100, v=v, f=f, category_name="bunny", dataset_name="dataset", pcd=pcd, mesh=mesh)
