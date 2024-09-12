@@ -14,7 +14,7 @@ filename = "./data/stanford_bunny.las"
 output_path = "./results"
 
 
-def downsample(pcd, down_sampling_method, every_k_points=10, voxel_size=0.005):
+def downsample(pcd, down_sampling_method, every_k_points=100, voxel_size=0.005):
     # Uniform downsampling of the point cloud
     if down_sampling_method == "uniform":
         pcd = pcd.uniform_down_sample(every_k_points=every_k_points)

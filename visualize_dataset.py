@@ -1,7 +1,7 @@
 import open3d
 import open3d as o3d
 import numpy as np
-from numpy.core.numeric import True_
+
 
 index = 1
 
