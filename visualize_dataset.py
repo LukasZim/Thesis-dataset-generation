@@ -3,7 +3,7 @@ import open3d as o3d
 import numpy as np
 
 
-index = 1
+index = 0
 
 def get_colours_list():
     return np.array([
@@ -107,7 +107,7 @@ def load_new_model(vis):
     print("Retrieved pointcloud")
     vis.add_geometry(pcd)
     vis.add_geometry(sphere)
-    vis.add_geometry(mesh)
+    # vis.add_geometry(mesh)
     vis.add_geometry(scaled_mesh)
 
     view_ctl = vis.get_view_control()

@@ -155,7 +155,7 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
     for i in range(P.shape[0]):
         num_tries+=1
         contact_point = P[i, :]
-        direction = np.mean(modes.fine_vertices)-contact_point
+        direction = mesh.triangle_normals[FI[i]]
         # direction =  -np.copy(contact_point) / np.linalg.norm(np.copy(contact_point))
         modes.impact_projection(contact_point=contact_point, direction=direction, threshold=sigmas[i],
                                 num_modes_used=30)

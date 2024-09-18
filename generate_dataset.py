@@ -55,6 +55,7 @@ def extract_mesh_from_point_cloud(pointcloud):
     # filter to make it look better
     # vertices_to_remove = densities < np.quantile(densities, 0.05)
     # mesh.remove_vertices_by_mask(vertices_to_remove)
+    m.compute_vertex_normals()
 
     return m, d
 
@@ -146,7 +147,7 @@ if __name__ == "__main__":
     # print("modes.fine_faces = ", len(modes.fine_triangles))
     print("done generating modes")
 
-    generate_fracture.generate_multiple_fractures(modes, num_impacts=100, v=v, f=f, category_name="bunny", dataset_name="dataset", pcd=pcd, mesh=mesh)
+    generate_fracture.generate_multiple_fractures(modes, num_impacts=1, v=v, f=f, category_name="bunny", dataset_name="dataset", pcd=pcd, mesh=mesh)
 
     # _, labels = find_scipy_mapping(pcd, modes)
     # print("found mapping")
