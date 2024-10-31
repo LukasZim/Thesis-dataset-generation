@@ -1,9 +1,9 @@
 import open3d
 import open3d as o3d
 import numpy as np
-from numpy.core.numeric import True_
 
-index = 1
+
+index = 0
 
 def get_colours_list():
     return np.array([
@@ -29,7 +29,7 @@ def get_colours_list():
     [0.0, 0.8, 0.9]  # Custom color 10
 ])
 
-def get_pointcloud_from_file(index, datasetName="bunny"):
+def get_pointcloud_from_file(index, datasetName="chair"):
     filename_points = str(index) + ".pcd"
     filename_labels = str(index) + ".seg"
 
@@ -67,7 +67,7 @@ def get_impulse_from_file(index, datasetName="bunny"):
 
     print(location)
     print(direction)
-    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=.002, resolution=20)
+    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=.02, resolution=20)
     sphere.translate(location)
 
     return sphere
@@ -101,14 +101,14 @@ def load_new_model(vis):
     print("Starting the visualization of the dataset")
     pcd, norm_direction = get_pointcloud_from_file(index)
     sphere = get_impulse_from_file(index)
-    # sphere.translate(norm_direction)
     mesh = get_mesh_from_file(index)
     scaled_mesh = get_mesh_from_file(index, scaled_mesh=True)
     print("Retrieved pointcloud")
+    print(index)
     vis.add_geometry(pcd)
     vis.add_geometry(sphere)
-    vis.add_geometry(mesh)
-    vis.add_geometry(scaled_mesh)
+    # vis.add_geometry(mesh)
+    # vis.add_geometry(scaled_mesh)
 
     view_ctl = vis.get_view_control()
     view_ctl.set_zoom(2)

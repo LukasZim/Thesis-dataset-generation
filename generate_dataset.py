@@ -1,3 +1,5 @@
+import random
+
 import io
 import sys
 
@@ -7,19 +9,30 @@ import numpy as np
 from scipy.spatial import KDTree
 import time
 
+from plyfile import PlyData
+
 import generate_fracture
 
-down_sampling_method = "uniform"
-filename = "./data/stanford_bunny.las"
+down_sampling_method = "sample_x"
+filename = "/home/lukasz/Documents/thesis_pointcloud/data/chair/point_cloud.ply"
+mesh_filename = "./data/chair/chair3.obj"
 output_path = "./results"
+mesh_extraction_needed = False
+dataset_name = "dataset"
+category_name = "chair"
+dataset_size = 100
 
 
-def downsample(pcd, down_sampling_method, every_k_points=10, voxel_size=0.005):
+def downsample(pcd, down_sampling_method, every_k_points=100, voxel_size=0.005, sample_x_points=2000):
     # Uniform downsampling of the point cloud
     if down_sampling_method == "uniform":
         pcd = pcd.uniform_down_sample(every_k_points=every_k_points)
     elif down_sampling_method == "voxel":
         pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
+    elif down_sampling_method == "sample_x":
+        total_points = len(pcd.points)
+        sampling_ratio = sample_x_points / total_points
+        pcd = pcd.random_down_sample(sampling_ratio=sampling_ratio)
     elif down_sampling_method.lower() != "none":
         print("sampling method not found, defaulting to using no method")
 
@@ -48,14 +61,56 @@ def extract_point_cloud_from_las_file(filename):
     return pcd
 
 
+def extract_splat_from_ply_file(filename):
+    ply_data = PlyData.read(filename)
+    vertex_data = ply_data['vertex'].data
+    x = vertex_data["x"]
+    y = vertex_data["y"]
+    z = vertex_data["z"]
+
+    points = np.vstack([x, y, z]).T
+
+    r = vertex_data["f_dc_0"]
+    g = vertex_data["f_dc_1"]
+    b = vertex_data["f_dc_2"]
+
+    colors = np.vstack([r, g, b]).T
+
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(points)
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+
+    print(pcd.has_colors())
+    print("PCD rotation not needed anymore")
+    # o3d.visualization.draw_geometries([pcd])
+
+    # estimate normals
+    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=1, max_nn=30))
+    pcd.orient_normals_consistent_tangent_plane(k=30)
+
+    return pcd
+
+
+def extract_mesh_from_obj_file(mesh_filename):
+    mesh = o3d.io.read_triangle_mesh(mesh_filename, True)
+    mesh.compute_vertex_normals()
+
+    # o3d.visualization.draw_geometries([mesh])
+    return mesh
+
+
 def extract_mesh_from_point_cloud(pointcloud):
     # perform poisson surface reconstruction
-    m, d = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pointcloud, depth=9)
+    m, d = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pointcloud, depth=15)
+    #radii = [0.08, 0.16, .32]
+    #m = o3d.geometry.TriangleMesh.create_from_point_cloud_ball_pivoting(
+    #   pcd, o3d.utility.DoubleVector(radii))
+
     m.vertices = o3d.utility.Vector3dVector(np.asarray(m.vertices) - np.mean(np.asarray(m.vertices), axis=0))
     # filter to make it look better
     # vertices_to_remove = densities < np.quantile(densities, 0.05)
     # mesh.remove_vertices_by_mask(vertices_to_remove)
-
+    m.compute_vertex_normals()
     return m, d
 
 
@@ -101,43 +156,51 @@ def find_scipy_mapping(pointcloud, fracture_modes):
 
 def get_colours_list():
     return np.array([
-    [1.0, 0.0, 0.0],  # Red
-    [0.0, 1.0, 0.0],  # Green
-    [0.0, 0.0, 1.0],  # Blue
-    [1.0, 1.0, 0.0],  # Yellow
-    [1.0, 0.0, 1.0],  # Magenta
-    [0.0, 1.0, 1.0],  # Cyan
-    [0.5, 0.5, 0.5],  # Gray
-    [1.0, 0.5, 0.0],  # Orange
-    [0.5, 0.0, 1.0],  # Purple
-    [0.0, 0.5, 0.5],  # Teal
-    [0.3, 0.7, 0.2],  # Custom color 1
-    [0.1, 0.5, 0.9],  # Custom color 2
-    [0.9, 0.2, 0.5],  # Custom color 3
-    [0.6, 0.4, 0.7],  # Custom color 4
-    [0.2, 0.8, 0.3],  # Custom color 5
-    [0.8, 0.3, 0.1],  # Custom color 6
-    [0.4, 0.1, 0.6],  # Custom color 7
-    [0.7, 0.9, 0.2],  # Custom color 8
-    [0.5, 0.2, 0.8],  # Custom color 9
-    [0.0, 0.8, 0.9]  # Custom color 10
-])
+        [1.0, 0.0, 0.0],  # Red
+        [0.0, 1.0, 0.0],  # Green
+        [0.0, 0.0, 1.0],  # Blue
+        [1.0, 1.0, 0.0],  # Yellow
+        [1.0, 0.0, 1.0],  # Magenta
+        [0.0, 1.0, 1.0],  # Cyan
+        [0.5, 0.5, 0.5],  # Gray
+        [1.0, 0.5, 0.0],  # Orange
+        [0.5, 0.0, 1.0],  # Purple
+        [0.0, 0.5, 0.5],  # Teal
+        [0.3, 0.7, 0.2],  # Custom color 1
+        [0.1, 0.5, 0.9],  # Custom color 2
+        [0.9, 0.2, 0.5],  # Custom color 3
+        [0.6, 0.4, 0.7],  # Custom color 4
+        [0.2, 0.8, 0.3],  # Custom color 5
+        [0.8, 0.3, 0.1],  # Custom color 6
+        [0.4, 0.1, 0.6],  # Custom color 7
+        [0.7, 0.9, 0.2],  # Custom color 8
+        [0.5, 0.2, 0.8],  # Custom color 9
+        [0.0, 0.8, 0.9]  # Custom color 10
+    ])
+
 
 if __name__ == "__main__":
     print("starting")
 
-    pcd = extract_point_cloud_from_las_file(filename)
+    #pcd = extract_point_cloud_from_las_file(filename)
+    pcd = extract_splat_from_ply_file(filename)
     print("extracted point cloud")
 
-    pcd = downsample(pcd, down_sampling_method, every_k_points=50)
-    print("downsampled point cloud")
+    # pcd.scale(10, center=pcd.get_center())
 
-    mesh, densities = extract_mesh_from_point_cloud(pcd)
+    #pcd = downsample(pcd, down_sampling_method, every_k_points=50)
+    print("downsampled point cloud")
+    if mesh_extraction_needed:
+        mesh, densities = extract_mesh_from_point_cloud(pcd)
+    else:
+        mesh = extract_mesh_from_obj_file(mesh_filename)
+
+    # o3d.visualization.draw_geometries([mesh])
 
     print("extracted mesh from point cloud")
 
     # sys.stdout = io.StringIO()
-    modes,v,f = generate_fracture.create_modes(mesh.vertices, mesh.triangles)
+    modes, v, f = generate_fracture.create_modes(mesh.vertices, mesh.triangles)
     # sys.stdout = sys.__stdout__
     print("mesh.vertices = ", len(mesh.vertices))
     # print("mesh.faces = ", len(mesh.triangles))
@@ -146,7 +209,8 @@ if __name__ == "__main__":
     # print("modes.fine_faces = ", len(modes.fine_triangles))
     print("done generating modes")
 
-    generate_fracture.generate_multiple_fractures(modes, num_impacts=100, v=v, f=f, category_name="bunny", dataset_name="dataset", pcd=pcd, mesh=mesh)
+    generate_fracture.generate_multiple_fractures(modes, num_impacts=dataset_size, v=v, f=f, category_name=category_name,
+                                                  dataset_name=dataset_name, pcd=pcd, mesh=mesh, ply_file=filename)
 
     # _, labels = find_scipy_mapping(pcd, modes)
     # print("found mapping")

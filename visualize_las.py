@@ -129,33 +129,33 @@ if __name__ == "__main__":
     pcd = extract_point_cloud_from_las_file(filename)
     print("extracted point cloud")
 
-    pcd = downsample(pcd, down_sampling_method, every_k_points=100)
-    print("downsampled point cloud")
-
-    mesh, densities = extract_mesh_from_point_cloud(pcd)
-    print("extracted mesh from point cloud")
-
-    sys.stdout = io.StringIO()
-    modes = generate_fracture.generate_fracture(mesh.vertices, mesh.triangles)
-    sys.stdout = sys.__stdout__
-    print("done generating modes")
-
-    _, labels = find_scipy_mapping(pcd, modes, mesh)
-    print("found mapping")
-
-    # Visualize Point Cloud
-    # o3d.visualization.draw_geometries([pcd])
-
-    # Define 20 different RGB colors in the range [0-1]
-    colors_list = get_colours_list()
-    # colours = np.repeat((labels / np.max(labels)), 3).reshape(-1, 3)
-    colours = colors_list[labels]
-    pcd.colors = o3d.utility.Vector3dVector(colours)
-    print("calculated colours")
-
-    # Visualize mesh and pointcloud
-    o3d.visualization.draw_geometries([pcd, mesh])
-
-    # visualize mesh
-    # o3d.visualization.draw_geometries([mesh])
-    print("done")
+    # pcd = downsample(pcd, down_sampling_method, every_k_points=100)
+    # print("downsampled point cloud")
+    #
+    # mesh, densities = extract_mesh_from_point_cloud(pcd)
+    # print("extracted mesh from point cloud")
+    #
+    # sys.stdout = io.StringIO()
+    # modes = generate_fracture.generate_fracture(mesh.vertices, mesh.triangles)
+    # sys.stdout = sys.__stdout__
+    # print("done generating modes")
+    #
+    # _, labels = find_scipy_mapping(pcd, modes, mesh)
+    # print("found mapping")
+    #
+    # # Visualize Point Cloud
+    # # o3d.visualization.draw_geometries([pcd])
+    #
+    # # Define 20 different RGB colors in the range [0-1]
+    # colors_list = get_colours_list()
+    # # colours = np.repeat((labels / np.max(labels)), 3).reshape(-1, 3)
+    # colours = colors_list[labels]
+    # pcd.colors = o3d.utility.Vector3dVector(colours)
+    # print("calculated colours")
+    #
+    # # Visualize mesh and pointcloud
+    # o3d.visualization.draw_geometries([pcd, mesh])
+    #
+    # # visualize mesh
+    # # o3d.visualization.draw_geometries([mesh])
+    # print("done")
