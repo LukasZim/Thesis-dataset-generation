@@ -3,6 +3,7 @@ import numpy as np
 
 
 def read_custom_mesh(file_path):
+    print("THIS SHOULD ONLY BE USED FOR THE DEPRICATED .mesh FILES USED IN OLDER VERSIONS OF THE DATASET GENERATION")
     vertices = []
     faces = []
 
