@@ -2,6 +2,7 @@ import open3d
 import open3d as o3d
 import numpy as np
 
+import generate_dataset
 
 index = 0
 
@@ -29,23 +30,26 @@ def get_colours_list():
     [0.0, 0.8, 0.9]  # Custom color 10
 ])
 
-def get_pointcloud_from_file(index, datasetName="chair"):
-    filename_points = str(index) + ".pcd"
-    filename_labels = str(index) + ".seg"
+def get_pointcloud_from_file(output_folder="dataset", datasetName="bunny"):
+    filename_points = "pointcloud.pcd"
+
 
     points = []
-    for line in open("dataset/" + datasetName + "/points/" + filename_points):
+    for line in open(output_folder + "/" + datasetName + "/" + filename_points):
         points.append(tuple(map(lambda x: float(x), line.split(" "))))
-    normalization_direction = points[0] - np.mean(points, axis=0)
-    # print("Normalization direction: ", normalization_direction)
-    points = points - np.mean(points, axis=0)
+    # normalization_direction = points[0] - np.mean(points, axis=0)
+    #
+    # points = points - np.mean(points, axis=0)
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
     # estimate normals
     pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=1, max_nn=30))
     pcd.orient_normals_consistent_tangent_plane(k=30)
+    return pcd#, normalization_direction
 
-    colours = []
+def color_pcd(pcd, index, output_folder="dataset", datasetName="bunny"):
+    filename_labels = str(index) + ".seg"
+
     labels = []
     for line in open("dataset/" + datasetName + "/points_label/" + filename_labels):
         labels.append(int(line))
@@ -55,7 +59,7 @@ def get_pointcloud_from_file(index, datasetName="chair"):
     colours = colors_list[labels]
     pcd.colors = o3d.utility.Vector3dVector(colours)
 
-    return pcd, normalization_direction
+    return pcd
 
 def get_impulse_from_file(index, datasetName="bunny"):
     filename_impulses = str(index) + ".imp"
@@ -67,48 +71,33 @@ def get_impulse_from_file(index, datasetName="bunny"):
 
     print(location)
     print(direction)
-    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=.02, resolution=20)
+    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=.005, resolution=20)
+    sphere.paint_uniform_color([1.0, 0.0, 0.0])
     sphere.translate(location)
 
     return sphere
 
-def get_mesh_from_file(index, scaled_mesh = False, datasetName = "bunny"):
-    filename_mesh = str(index) + ".mesh"
-    vertices = []
-    faces = []
-    done_with_vertices = False
-    for line in open("dataset/" + datasetName + "/" + ("scaled_" if scaled_mesh else "")+ "mesh/" + filename_mesh):
-        if line == "\n":
-            done_with_vertices = True
-            continue
-        if not done_with_vertices:
-            vertices.append(list(map(lambda x: float(x), line.split(" "))))
-        else:
-            faces.append(list(map(lambda x: int(x), line.split(" "))))
-
-    mesh = o3d.geometry.TriangleMesh()
-    mesh.vertices = o3d.utility.Vector3dVector(vertices)
-    mesh.triangles = o3d.utility.Vector3iVector(faces)
+def get_mesh_from_file(output_folder="dataset", dataset_name = "bunny", mesh_name= "/original_mesh.obj"):
+    mesh = o3d.io.read_triangle_mesh(output_folder + "/" + dataset_name + mesh_name)
     mesh.compute_vertex_normals()
     return mesh
-
-
 
 
 def load_new_model(vis):
     global index
     vis.clear_geometries()
     print("Starting the visualization of the dataset")
-    pcd, norm_direction = get_pointcloud_from_file(index)
+    pcd = get_pointcloud_from_file()
+    pcd = color_pcd(pcd, index)
     sphere = get_impulse_from_file(index)
-    mesh = get_mesh_from_file(index)
-    scaled_mesh = get_mesh_from_file(index, scaled_mesh=True)
+    mesh = get_mesh_from_file(mesh_name="/simulation_mesh.obj")
+    mesh2 = get_mesh_from_file()
     print("Retrieved pointcloud")
     print(index)
     vis.add_geometry(pcd)
     vis.add_geometry(sphere)
     # vis.add_geometry(mesh)
-    # vis.add_geometry(scaled_mesh)
+    vis.add_geometry(mesh2)
 
     view_ctl = vis.get_view_control()
     view_ctl.set_zoom(2)

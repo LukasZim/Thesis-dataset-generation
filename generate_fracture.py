@@ -98,8 +98,8 @@ def generate_fracture(v_fine, f_fine, num_faces=100, output_folder="./results"):
 
 
 def create_modes(v_fine, f_fine, num_faces=4000, output_folder="./results"):
-    v_fine = np.asarray(v_fine)
-    f_fine = np.asarray(f_fine)
+    v_fine = np.asarray(v_fine).copy()
+    f_fine = np.asarray(f_fine).copy()
     print("v_fine", len(v_fine))
     v_fine = gpytoolbox.normalize_points(v_fine)
     print("v_fine", len(v_fine))
@@ -175,22 +175,16 @@ def generate_multiple_fractures(modes, num_impacts, v, f, category_name, dataset
         # print(modes.n_pieces_after_impact > 1, modes.n_pieces_after_impact < 100, new, valid_volume)
         if 1 < modes.n_pieces_after_impact < 100 and new and valid_volume:
             write_to_file(modes, output_folder=category_name, dataset_name=dataset_name, index=running_num, pcd=pcd,
-                          contact_point=contact_point, direction=direction, mesh=mesh, ply_file=ply_file)
+                          contact_point=contact_point, direction=direction, mesh=mesh, ply_file=ply_file, v=v, f=f)
             running_num += 1
             print("running_num: ", running_num)
             print("after this amount of tries: ", num_tries)
             num_tries = 0
-            # all_labels[:, running_num] = modes.piece_labels_after_impact
-            # write_output_name = os.path.join(output_dir, "fractured_") + str(running_num)
-            # running_num = running_num + 1
-            # if not os.path.exists(write_output_name):
-            #     os.mkdir(write_output_name)
-            # if compressed:
-            #     modes.write_segmented_output_compressed(filename=write_output_name)
-            # else:
-            #     modes.write_segmented_output(filename=write_output_name, pieces=True)
+
         if running_num >= num_impacts:
             break
+
+    o3d.visualization.draw_geometries([mesh, pcd])
 
 
 def write_pcd_to_file(dataset_name, output_folder, pcd):
@@ -206,7 +200,8 @@ def write_pcd_to_file(dataset_name, output_folder, pcd):
 def write_segmentation_to_file(pointcloud, modes, mesh, dataset_name, output_folder, index):
     os.makedirs(os.path.join(dataset_name, output_folder, "points_label"), exist_ok=True)
     # retrieve segmentation
-    _, labels, scaled_vertices = find_scipy_mapping(pointcloud, modes, mesh)
+    # TODO: findd a better place of implementing this
+    _, labels, scaled_vertices, scale_function = find_scipy_mapping(pointcloud, modes, mesh)
 
     # write segmentation to .seg file
     seg_path = os.path.join(dataset_name, output_folder, "points_label", str(index) + ".seg")
@@ -214,10 +209,12 @@ def write_segmentation_to_file(pointcloud, modes, mesh, dataset_name, output_fol
         for label in labels:
             f.write(f"{label}\n")
 
+    return scale_function
 
-def write_impulse_to_file(contact_point, direction, dataset_name, output_folder, index):
+
+def write_impulse_to_file(contact_point, direction, dataset_name, output_folder, index, scale_function):
     os.makedirs(os.path.join(dataset_name, output_folder, "impulse_info"), exist_ok=True)
-
+    contact_point = scale_function(contact_point)
     # retrieve impulse info
     impulse_info = np.concatenate((contact_point, direction))
 
@@ -229,18 +226,22 @@ def write_impulse_to_file(contact_point, direction, dataset_name, output_folder,
             f"{contact_point[0]} {contact_point[1]} {contact_point[2]} {impulse_info[3]} {impulse_info[4]} {impulse_info[5]}\n")
 
 
-def write_mesh_to_file(dataset_name, output_folder, index, mesh):
-    os.makedirs(os.path.join(dataset_name, output_folder, "mesh"), exist_ok=True)
-    mesh_path = os.path.join(dataset_name, output_folder, "mesh", str(index) + ".obj")
-    o3d.io.write_triangle_mesh(mesh_path, mesh)
+def write_mesh_to_file(dataset_name, output_folder, mesh, filename, index):
+    os.makedirs(os.path.join(dataset_name, output_folder), exist_ok=True)
+    mesh_path = os.path.join(dataset_name, output_folder, filename)
+    # if os.path.exists(mesh_path):
+    #     return
+    if index == 0:
+        o3d.io.write_triangle_mesh(mesh_path, mesh)
 
-
+# TODO: never works, due to bug in checking if the file exists, since ply_file stores the entire path of the file,
+#  instead of filename
 def write_splat_to_file(ply_file, output_folder):
     if not os.path.exists(os.path.join(output_folder, ply_file)):
         shutil.copyfile(ply_file, os.path.join(output_folder))
 
 
-def write_to_file(modes, output_folder, dataset_name, index, pcd, contact_point, direction, mesh, ply_file):
+def write_to_file(modes, output_folder, dataset_name, index, pcd, contact_point, direction, mesh, ply_file, v, f):
     if not os.path.exists(dataset_name):
         os.makedirs(dataset_name)
 
@@ -251,6 +252,10 @@ def write_to_file(modes, output_folder, dataset_name, index, pcd, contact_point,
     write_splat_to_file(ply_file, output_folder)
 
     # write the non_constants to file
-    write_segmentation_to_file(pcd, modes, mesh, dataset_name, output_folder, index)
-    write_impulse_to_file(contact_point, direction, dataset_name, output_folder, index)
-    write_mesh_to_file(dataset_name, output_folder, index, mesh)
+    scale_function = write_segmentation_to_file(pcd, modes, mesh, dataset_name, output_folder, index)
+    write_impulse_to_file(contact_point, direction, dataset_name, output_folder, index, scale_function)
+    write_mesh_to_file(dataset_name, output_folder, mesh, "original_mesh.obj", index)
+    simulation_mesh = o3d.geometry.TriangleMesh()
+    simulation_mesh.vertices = o3d.utility.Vector3dVector(v)
+    simulation_mesh.triangles = o3d.utility.Vector3iVector(f)
+    write_mesh_to_file(dataset_name, output_folder, simulation_mesh, "simulation_mesh.obj", index)

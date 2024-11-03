@@ -1,3 +1,5 @@
+import os
+
 import igl
 import numpy as np
 import open3d as o3d
@@ -68,14 +70,23 @@ def scale_mesh_to_pcd(pcd, mesh):
     mesh.vertices = o3d.utility.Vector3dVector((np.asarray(mesh.vertices) - center_mesh) * uniform_scale + center_pcd)
     return mesh
 
+def load_impact_points(folder_path):
+    impact_positions = []
+    for filename in os.listdir(folder_path):
+        filepath = os.path.join(folder_path, filename)
+        with open(filepath, "r") as f:
+            impact_positions.append(f.read().split(" ")[:3])
+
+    return impact_positions
+
+
 
 if __name__ == "__main__":
-    num_impacts = 200
-    mesh = get_mesh_from_file("../data/bunny_oded.obj")
-    pcd = get_pcd_las("../data/stanford_bunny.las", downsample=True)
+    mesh = get_mesh_from_file("../dataset/bunny/simulation_mesh.obj")
+    # pcd = get_pcd_las("../data/stanford_bunny.las", downsample=True)
 
     # pcd = scale_pcd_to_mesh(pcd, mesh)
-    mesh = scale_mesh_to_pcd(pcd, mesh)
+    # mesh = scale_mesh_to_pcd(pcd, mesh)
 
     # modes, v_coarse, f_coarse = generate_fracture.create_modes(v, f)
     # v_coarse, f_coarse = lazy_cage(v, f, num_faces=4000, grid_size=256)
@@ -86,11 +97,13 @@ if __name__ == "__main__":
 
     v = np.asarray(mesh.vertices)
     f = np.asarray(mesh.triangles)
-    P = create_points_on_mesh(num_impacts, v, f)
+    # P = create_points_on_mesh(num_impacts, v, f)
 
-    spheres = spheres_at_locations(P, radius = 0.0002)
+    P = load_impact_points("../dataset/bunny/impulse_info")
+
+    spheres = spheres_at_locations(P, radius = 0.01)
     sphere2 = sphere_at_location([0,0,0])
 
 
 
-    o3d.visualization.draw_geometries(spheres + [pcd, mesh])
+    o3d.visualization.draw_geometries(spheres + [mesh])

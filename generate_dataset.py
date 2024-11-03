@@ -13,14 +13,7 @@ from plyfile import PlyData
 
 import generate_fracture
 
-down_sampling_method = "sample_x"
-filename = "/home/lukasz/Documents/thesis_pointcloud/data/chair/point_cloud.ply"
-mesh_filename = "./data/chair/chair3.obj"
-output_path = "./results"
-mesh_extraction_needed = False
-dataset_name = "dataset"
-category_name = "chair"
-dataset_size = 100
+
 
 
 def downsample(pcd, down_sampling_method, every_k_points=100, voxel_size=0.005, sample_x_points=2000):
@@ -178,29 +171,79 @@ def get_colours_list():
         [0.0, 0.8, 0.9]  # Custom color 10
     ])
 
+def extract_point_cloud_from_file(filename):
+    if filename.endswith(".las"):
+        return extract_point_cloud_from_las_file(filename)
+
+    elif filename.endswith(".ply"):
+        return extract_splat_from_ply_file(filename)
+
+    raise Exception("Sorry, file type not supported: ", filename.split(".")[-1])
+
+def scale_mesh_to_pcd(pcd, mesh):
+    min_bound_pcd, max_bound_pcd = np.asarray(pcd.get_min_bound()), np.asarray(pcd.get_max_bound())
+    min_bound_mesh, max_bound_mesh = np.asarray(mesh.get_min_bound()), np.asarray(mesh.get_max_bound())
+
+    center_pcd = (min_bound_pcd + max_bound_pcd) / 2
+    center_mesh = (min_bound_mesh + max_bound_mesh) / 2
+    range1 = max_bound_pcd - min_bound_pcd
+    range2 = max_bound_mesh - min_bound_mesh
+
+    # Find scale factor to match the ranges (based on the largest relative axis range)
+    scale_factor = range1 / range2  # element-wise scale factor
+
+    # To make scaling uniform, use the largest scale factor among axes
+    uniform_scale = max(scale_factor)
+
+    mesh.vertices = o3d.utility.Vector3dVector((np.asarray(mesh.vertices) - center_mesh) * uniform_scale + center_pcd)
+    return mesh
 
 if __name__ == "__main__":
+    pcd_downsample_needed = True
+    down_sampling_method = "sample_x"
+    filename = "/home/lukasz/Documents/thesis_pointcloud/data/stanford_bunny.las"
+    mesh_filename = "./data/bunny_oded.obj"
+    output_path = "./results"
+    mesh_extraction_needed = False
+    mesh_aligning_needed = True
+    dataset_name = "dataset"
+    category_name = "bunny"
+    dataset_size = 100
+
+
     print("starting")
 
-    #pcd = extract_point_cloud_from_las_file(filename)
-    pcd = extract_splat_from_ply_file(filename)
+    # pcd = extract_point_cloud_from_las_file(filename)
+    # pcd = extract_splat_from_ply_file(filename)
+    pcd = extract_point_cloud_from_file(filename)
     print("extracted point cloud")
 
     # pcd.scale(10, center=pcd.get_center())
+    if pcd_downsample_needed:
+        pcd = downsample(pcd, down_sampling_method, every_k_points=50)
+        print("downsampled point cloud")
 
-    #pcd = downsample(pcd, down_sampling_method, every_k_points=50)
-    print("downsampled point cloud")
     if mesh_extraction_needed:
+        print("extracting mesh")
         mesh, densities = extract_mesh_from_point_cloud(pcd)
+        print("DONE extracted mesh from point cloud")
     else:
+        print("reading mesh form file: ", mesh_filename)
         mesh = extract_mesh_from_obj_file(mesh_filename)
+        # if mesh_aligning_needed:
+        mesh = scale_mesh_to_pcd(pcd, mesh) if mesh_aligning_needed else mesh
+        print("reading mesh from file DONE")
 
-    # o3d.visualization.draw_geometries([mesh])
+    print(mesh.get_center())
+    print(pcd.get_center())
+    # o3d.visualization.draw_geometries([mesh, pcd])
 
-    print("extracted mesh from point cloud")
+
 
     # sys.stdout = io.StringIO()
+    print("Start creating Fracture modes")
     modes, v, f = generate_fracture.create_modes(mesh.vertices, mesh.triangles)
+    print("Done creating Fracture modes")
     # sys.stdout = sys.__stdout__
     print("mesh.vertices = ", len(mesh.vertices))
     # print("mesh.faces = ", len(mesh.triangles))
@@ -208,6 +251,10 @@ if __name__ == "__main__":
     print("modes.fine_vertices = ", len(modes.fine_vertices))
     # print("modes.fine_faces = ", len(modes.fine_triangles))
     print("done generating modes")
+
+    print(mesh.get_center())
+    print(pcd.get_center())
+    # o3d.visualization.draw_geometries([mesh, pcd])
 
     generate_fracture.generate_multiple_fractures(modes, num_impacts=dataset_size, v=v, f=f, category_name=category_name,
                                                   dataset_name=dataset_name, pcd=pcd, mesh=mesh, ply_file=filename)

@@ -88,6 +88,7 @@ def find_scipy_mapping(pointcloud, fracture_modes, mesh):
     mesh_min = np.min(mesh_points, axis=0)
     mesh_max = np.max(mesh_points, axis=0)
     mesh_points = (mesh_points - mesh_min) / (mesh_max - mesh_min) * (pcd_max - pcd_min) + pcd_min
+    scale_fun = lambda point: (point - mesh_min) / (mesh_max - mesh_min) * (pcd_max - pcd_min) + pcd_min
     kd_tree_mesh2 = KDTree(mesh_points)
     _, indices = kd_tree_mesh2.query(pointcloud_points)
 
@@ -96,7 +97,7 @@ def find_scipy_mapping(pointcloud, fracture_modes, mesh):
     # print(np.unique(labels, return_counts=True))
     # closest_points = mesh_points[indices]
     # print(time.time() - start_time)
-    return np.arange(0, len(labels)), labels, mesh_points
+    return np.arange(0, len(labels)), labels, mesh_points, scale_fun
 
 
 def get_colours_list():
