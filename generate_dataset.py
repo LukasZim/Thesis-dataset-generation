@@ -199,16 +199,33 @@ def scale_mesh_to_pcd(pcd, mesh):
     return mesh
 
 if __name__ == "__main__":
-    pcd_downsample_needed = True
-    down_sampling_method = "sample_x"
-    filename = "/home/lukasz/Documents/thesis_pointcloud/data/stanford_bunny.las"
-    mesh_filename = "./data/bunny_oded.obj"
-    output_path = "./results"
-    mesh_extraction_needed = False
-    mesh_aligning_needed = True
-    dataset_name = "dataset"
-    category_name = "bunny"
-    dataset_size = 100
+    BUNNY = 0
+    CHAIR = 1
+    choice = CHAIR
+    if choice == BUNNY:
+        pcd_downsample_needed = True
+        down_sampling_method = "sample_x"
+        filename = "/home/lukasz/Documents/thesis_pointcloud/data/stanford_bunny.las"
+        mesh_filename = "./data/bunny_oded.obj"
+        output_path = "./results"
+        mesh_extraction_needed = False
+        mesh_aligning_needed = True
+        dataset_name = "dataset"
+        category_name = "bunny"
+        dataset_size = 100
+    elif choice == CHAIR:
+        pcd_downsample_needed = False
+        down_sampling_method = "sample_x"
+        filename = "/home/lukasz/Documents/thesis_pointcloud/data/chair/point_cloud.ply"
+        mesh_filename = "data/chair/chair.obj"
+        output_path = "./results"
+        mesh_extraction_needed = False
+        mesh_aligning_needed = False
+        dataset_name = "dataset"
+        category_name = "Chair"
+        dataset_size = 100
+    else:
+        assert False
 
 
     print("starting")
@@ -236,7 +253,7 @@ if __name__ == "__main__":
 
     print(mesh.get_center())
     print(pcd.get_center())
-    # o3d.visualization.draw_geometries([mesh, pcd])
+    o3d.visualization.draw_geometries([mesh, pcd])
 
 
 

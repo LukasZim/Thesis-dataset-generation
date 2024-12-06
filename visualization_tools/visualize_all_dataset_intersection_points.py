@@ -70,6 +70,38 @@ def scale_mesh_to_pcd(pcd, mesh):
     mesh.vertices = o3d.utility.Vector3dVector((np.asarray(mesh.vertices) - center_mesh) * uniform_scale + center_pcd)
     return mesh
 
+def scale_mesh_to_mesh(mesh1, mesh2):
+    # Step 1: Get the bounding boxes of both meshes
+    bbox1 = mesh1.get_axis_aligned_bounding_box()
+    bbox2 = mesh2.get_axis_aligned_bounding_box()
+
+    # Step 2: Calculate the extents (dimensions) of each bounding box
+    extent1 = bbox1.get_extent()  # Dimensions of mesh1's bounding box (x, y, z)
+    extent2 = bbox2.get_extent()  # Dimensions of mesh2's bounding box (x, y, z)
+
+    # Step 3: Calculate the scaling factors to exactly match each dimension
+    scaling_factors = extent2 / extent1  # Element-wise division to match each axis exactly
+
+    # Step 4: Center mesh1 vertices around the origin
+    vertices = np.asarray(mesh1.vertices)
+    centroid1 = vertices.mean(axis=0)
+    vertices -= centroid1  # Translate to the origin
+
+    # Step 5: Apply non-uniform scaling
+    vertices *= scaling_factors
+
+    # Step 6: Translate vertices back to the original center of mesh1
+    vertices += centroid1
+
+    # Update mesh1's vertices with the new scaled vertices
+    mesh1.vertices = o3d.utility.Vector3dVector(vertices)
+
+    # Step 7: Translate mesh1 to match the position of mesh2's bounding box
+    translation = bbox2.get_center() - mesh1.get_axis_aligned_bounding_box().get_center()
+    mesh1.translate(translation)
+
+
+
 def load_impact_points(folder_path):
     impact_positions = []
     for filename in os.listdir(folder_path):
@@ -82,7 +114,9 @@ def load_impact_points(folder_path):
 
 
 if __name__ == "__main__":
-    mesh = get_mesh_from_file("../dataset/bunny/simulation_mesh.obj")
+    # mesh = get_mesh_from_file("../dataset/Chair/simulation_mesh.obj")
+    mesh = get_mesh_from_file("../dataset/Chair/original_mesh.obj")
+    # scale_mesh_to_mesh(mesh, mesh2)
     # pcd = get_pcd_las("../data/stanford_bunny.las", downsample=True)
 
     # pcd = scale_pcd_to_mesh(pcd, mesh)
@@ -99,7 +133,7 @@ if __name__ == "__main__":
     f = np.asarray(mesh.triangles)
     # P = create_points_on_mesh(num_impacts, v, f)
 
-    P = load_impact_points("../dataset/bunny/impulse_info")
+    P = load_impact_points("../dataset/Chair/impulse_info")
 
     spheres = spheres_at_locations(P, radius = 0.01)
     sphere2 = sphere_at_location([0,0,0])

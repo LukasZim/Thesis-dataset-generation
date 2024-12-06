@@ -30,12 +30,12 @@ def get_colours_list():
     [0.0, 0.8, 0.9]  # Custom color 10
 ])
 
-def get_pointcloud_from_file(output_folder="dataset", datasetName="bunny"):
+def get_pointcloud_from_file(output_folder="dataset"):
     filename_points = "pointcloud.pcd"
 
 
     points = []
-    for line in open(output_folder + "/" + datasetName + "/" + filename_points):
+    for line in open(output_folder + "/" + DATASET_NAME + "/" + filename_points):
         points.append(tuple(map(lambda x: float(x), line.split(" "))))
     # normalization_direction = points[0] - np.mean(points, axis=0)
     #
@@ -47,11 +47,11 @@ def get_pointcloud_from_file(output_folder="dataset", datasetName="bunny"):
     pcd.orient_normals_consistent_tangent_plane(k=30)
     return pcd#, normalization_direction
 
-def color_pcd(pcd, index, output_folder="dataset", datasetName="bunny"):
+def color_pcd(pcd, index, output_folder="dataset"):
     filename_labels = str(index) + ".seg"
 
     labels = []
-    for line in open("dataset/" + datasetName + "/points_label/" + filename_labels):
+    for line in open("dataset/" + DATASET_NAME + "/points_label/" + filename_labels):
         labels.append(int(line))
 
     colors_list = get_colours_list()
@@ -61,24 +61,24 @@ def color_pcd(pcd, index, output_folder="dataset", datasetName="bunny"):
 
     return pcd
 
-def get_impulse_from_file(index, datasetName="bunny"):
+def get_impulse_from_file(index):
     filename_impulses = str(index) + ".imp"
     impulse_info = None
-    for line in open("dataset/" + datasetName + "/impulse_info/" + filename_impulses):
+    for line in open("dataset/" + DATASET_NAME + "/impulse_info/" + filename_impulses):
         impulse_info = list(map(lambda x: float(x), line.split(" ")))
     location = [impulse_info[0], impulse_info[1], impulse_info[2]]
     direction = [impulse_info[3], impulse_info[4], impulse_info[5]]
 
     print(location)
     print(direction)
-    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=.005, resolution=20)
-    sphere.paint_uniform_color([1.0, 0.0, 0.0])
+    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=.02, resolution=20)
+    sphere.paint_uniform_color([0.0, 0.0, 1.0])
     sphere.translate(location)
 
     return sphere
 
-def get_mesh_from_file(output_folder="dataset", dataset_name = "bunny", mesh_name= "/original_mesh.obj"):
-    mesh = o3d.io.read_triangle_mesh(output_folder + "/" + dataset_name + mesh_name)
+def get_mesh_from_file(output_folder="dataset", mesh_name= "/original_mesh.obj"):
+    mesh = o3d.io.read_triangle_mesh(output_folder + "/" + DATASET_NAME + mesh_name)
     mesh.compute_vertex_normals()
     return mesh
 
@@ -113,6 +113,8 @@ def minus_one(vis):
     index-=1
     print(index)
     load_new_model(vis)
+
+DATASET_NAME = "Chair"
 
 if __name__ == "__main__":
     print("Starting the visualization of the dataset")
