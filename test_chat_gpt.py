@@ -1,46 +1,64 @@
+import potpourri3d as pp3d
 import numpy as np
 import open3d as o3d
-# import open3d.cuda.pybind.t.geometry
-from plyfile import PlyData
 
-input_file = "chair/point_cloud.ply"
-ply_data = PlyData.read("./data/" + input_file)
-vertex_data = ply_data['vertex'].data
-x = vertex_data["x"]
-y = vertex_data["y"]
-z = vertex_data["z"]
+from geometry_tools.mesh_retrieval import create_mesh_from_faces_and_vertices
 
-points = np.vstack([x, y, z]).T
+# Load the mesh (vertices and faces)
+vertices, faces = pp3d.read_mesh("data/bunny_oded.obj")
+# mesh2 = o3d.io.read_triangle_mesh("data/bunny_oded.obj")
+mesh = create_mesh_from_faces_and_vertices(faces, vertices)
 
-r = vertex_data["f_dc_0"]
-g = vertex_data["f_dc_1"]
-b = vertex_data["f_dc_2"]
+# Initialize the geodesic solver
+solver = pp3d.MeshHeatMethodDistanceSolver(vertices, faces)
+# distances = np.empty((0), float)
+# for i in range(0, len(vertices)):
+#     # Define the source point (index) and collection of target points (indices)
+#     source_point = i  # Example: index of the source point
+#     target_points = [333]  # Example: indices of target points
+#
+#     # Compute distances from source to all vertices
+#     distances = solver.compute_distance(source_point)
+#
+#     # Extract distances for target points
+#     shortest_distances = np.min(distances[target_points])
+#     print(i, shortest_distances)
+#     np.append(distances, shortest_distances)
+distances = np.abs(np.array(solver.compute_distance_multisource([1000, 1111, 2902, 800])))
 
-colors = np.vstack([r, g, b]).T
-
-pcd = o3d.geometry.PointCloud()
-pcd.points = o3d.utility.Vector3dVector(points)
-pcd.colors = o3d.utility.Vector3dVector(colors)
-
-print(pcd.has_colors())
-
-angle = np.pi / 2
-R = pcd.get_rotation_matrix_from_axis_angle([-angle, 0, 0])
-pcd.rotate(R, center=(0, 0, 0))
-
-mesh = o3d.io.read_triangle_mesh("./data/chair/chair.obj", True)
+ratios = np.sqrt(distances / np.max(distances))
+colors = 1-(ratios[:, None] * np.array([1.0, 1.0, 1.0]))
+print(ratios)
+print(colors)
 mesh.compute_vertex_normals()
-mesh.orient_triangles()
+mesh.vertex_colors = o3d.utility.Vector3dVector(colors)
 
-print(mesh)
-print(mesh.is_watertight())
-mesh.remove_degenerate_triangles()
-mesh.remove_duplicated_vertices()
-mesh.remove_duplicated_triangles()
-mesh.remove_non_manifold_edges()
-# mesh.fill_holes()
-# mesh = tmesh
-print(mesh)
-print(mesh.is_watertight())
-o3d.visualization.draw_geometries([mesh])
+vis = o3d.visualization.Visualizer()
+vis.create_window()
 
+# Set camera parameters if needed
+ctr = vis.get_view_control()
+ctr.set_front([0, 0, -1])
+ctr.set_lookat([0, 0, 0])
+ctr.set_up([0, -1, 0])
+ctr.set_zoom(0.5)
+
+# Add mesh to visualizer
+vis.add_geometry(mesh)
+
+# Configure to disable all light effects
+opt = vis.get_render_option()
+opt.point_size = 1.0
+opt.background_color = np.array([1.0, 1.0, 1.0])  # White background
+opt.show_coordinate_frame = False
+opt.light_on = False
+opt.mesh_show_wireframe = True
+
+# Start the visualizer
+vis.run()
+
+# Destroy the visualizer window
+vis.destroy_window()
+
+
+# o3d.visualization.draw_geometries([mesh], mesh_show_back_face=True)

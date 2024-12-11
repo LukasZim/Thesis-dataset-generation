@@ -3,6 +3,7 @@ import numpy as np
 import open3d as o3d
 from gpytoolbox.copyleft import lazy_cage
 
+from geometry_tools.scaling import scale_mesh_to_pcd
 from visualization_tools.visualize_mesh import get_mesh_from_file
 from visualization_tools.visualize_pointcloud_las import get_pcd_las
 from visualization_tools.visualize_pointcloud_ply import get_pcd_ply
@@ -31,42 +32,6 @@ def create_points_on_mesh(num_impacts, v, f):
     B = np.vstack((B[:, 0], B[:, 0], B[:, 0], B[:, 1], B[:, 1], B[:, 1], B[:, 2], B[:, 2], B[:, 2])).T
     P = B[:, 0:3] * v[f[FI, 0], :] + B[:, 3:6] * v[f[FI, 1], :] + B[:, 6:9] * v[f[FI, 2], :]
     return P
-
-def scale_pcd_to_mesh(pcd, mesh):
-    min_bound_pcd, max_bound_pcd = np.asarray(pcd.get_min_bound()), np.asarray(pcd.get_max_bound())
-    min_bound_mesh, max_bound_mesh = np.asarray(mesh.get_min_bound()), np.asarray(mesh.get_max_bound())
-
-    center_pcd = (min_bound_pcd + max_bound_pcd) / 2
-    center_mesh = (min_bound_mesh + max_bound_mesh) / 2
-    range1 = max_bound_pcd - min_bound_pcd
-    range2 = max_bound_mesh - min_bound_mesh
-
-    # Find scale factor to match the ranges (based on the largest relative axis range)
-    scale_factor = range2 / range1  # element-wise scale factor
-
-    # To make scaling uniform, use the largest scale factor among axes
-    uniform_scale = max(scale_factor)
-
-    pcd.points = o3d.utility.Vector3dVector((np.asarray(pcd.points) - center_pcd) * uniform_scale + center_mesh)
-    return pcd
-
-def scale_mesh_to_pcd(pcd, mesh):
-    min_bound_pcd, max_bound_pcd = np.asarray(pcd.get_min_bound()), np.asarray(pcd.get_max_bound())
-    min_bound_mesh, max_bound_mesh = np.asarray(mesh.get_min_bound()), np.asarray(mesh.get_max_bound())
-
-    center_pcd = (min_bound_pcd + max_bound_pcd) / 2
-    center_mesh = (min_bound_mesh + max_bound_mesh) / 2
-    range1 = max_bound_pcd - min_bound_pcd
-    range2 = max_bound_mesh - min_bound_mesh
-
-    # Find scale factor to match the ranges (based on the largest relative axis range)
-    scale_factor = range1 / range2  # element-wise scale factor
-
-    # To make scaling uniform, use the largest scale factor among axes
-    uniform_scale = max(scale_factor)
-
-    mesh.vertices = o3d.utility.Vector3dVector((np.asarray(mesh.vertices) - center_mesh) * uniform_scale + center_pcd)
-    return mesh
 
 
 if __name__ == "__main__":
