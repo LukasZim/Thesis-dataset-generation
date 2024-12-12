@@ -58,7 +58,7 @@ class Config:
         self.mesh_extraction_needed = False
         self.mesh_aligning_needed = False
         self.dataset_name = "dataset"
-        self.category_name = "Chair"
+        self.category_name = "chair"
         self.num_impacts = 100
 
 if __name__ == "__main__":

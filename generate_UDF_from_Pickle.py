@@ -5,10 +5,12 @@ import os
 import open3d as o3d
 from scipy.spatial import KDTree
 from generate_UDF_dataset import Config
+import potpourri3d as pp3d
 
-from geometry_tools.mesh_retrieval import retrieve_fine_mesh_from_fracture_modes
+from geometry_tools.mesh_retrieval import retrieve_fine_mesh_from_fracture_modes, load_mesh_from_file, \
+    create_mesh_from_faces_and_vertices
 from geometry_tools.scaling import scale_mesh_to_mesh_inplace
-from geometry_tools.visualization import visualize_labeled_mesh
+from geometry_tools.visualization import visualize_labeled_mesh, visualize_UDF, visualize_mesh_with_contact_point
 
 
 def unload_pickle(file):
@@ -16,6 +18,12 @@ def unload_pickle(file):
         return pickle.load(f)
 
 def map_fine_labels_to_mesh(mesh, modes):
+    """
+    Takes a mesh and a GT fractured mesh and maps the labels of the fractured mesh to the original mesh using scaling of the AABB
+    :param mesh: the mesh you want the labelling for
+    :param modes: The fracture modes object storing the GT labeling
+    :return: a list of labels for the mesh param, size is num(vertices)
+    """
     fine_mesh = retrieve_fine_mesh_from_fracture_modes(mesh, modes)
     scale_mesh_to_mesh_inplace(fine_mesh, mesh)
     kd_tree_mesh2 = KDTree(np.asarray(fine_mesh.vertices))
@@ -25,43 +33,138 @@ def map_fine_labels_to_mesh(mesh, modes):
     return labels
 
 
+def determine_edge_points(mesh, labels):
+    """
+    Takes a mesh and a labelling and calculates the vertex points on a fracture line.
+    :param mesh: mesh
+    :param labels: labelling of the mesh
+    :return: Tuple of labelling of the fracture line and list of vertex points on the fracture line
+    """
+    edge_labels = np.zeros(labels.shape).astype(int)
+    vert_list = []
 
-def generate_UDF_dataset(folder):
+    for triangle in mesh.triangles:
+
+        #check if triangle[0] is on an fracture edge
+        if labels[triangle[0]] < labels[triangle[1]] or labels[triangle[0]] < labels[triangle[2]]:
+            edge_labels[triangle[0]] = 1
+            if triangle[0] not in vert_list:
+                vert_list.append(triangle[0])
+
+        # check if triangle[1] is on a fracture edge
+        if labels[triangle[1]] < labels[triangle[2]] or labels[triangle[1]] < labels[triangle[0]]:
+            edge_labels[triangle[1]] = 1
+            if triangle[1] not in vert_list:
+                vert_list.append(triangle[1])
+
+        # check if triangle[2] i s a fracture edge
+        if labels[triangle[2]] < labels[triangle[0]] or labels[triangle[2]] < labels[triangle[1]]:
+            edge_labels[triangle[2]] = 1
+            if triangle[2] not in vert_list:
+                vert_list.append(triangle[2])
+
+    return edge_labels, vert_list
+
+def calculate_UDF(mesh, edge_set, clamping_distance=0.3):
+    """
+    Takes a mesh and a set of edge points to calculate the UDF using Geodesic distance with potpourri3d
+    :param mesh: mesh to use, should be loaded in using mesh_retrieval.load_mesh_from_file or potpourri3d's mesh load method
+    :param edge_set: Set of points on the edge of the fracture lines
+    :param clamping_distance: The distance for which all values greater than it will be rounded ot it. Nice for visualization and some DL methods
+    :return: The Geodesic distances as labels for each vertex in the mesh to the edge_set vertices.
+    """
+    vertices = np.asarray(mesh.vertices)
+    faces = np.asarray(mesh.triangles)
+    # Initialize the geodesic solver
+    solver = pp3d.MeshHeatMethodDistanceSolver(vertices, faces)
+
+    distances = np.abs(np.array(solver.compute_distance_multisource(edge_set)))
+    distances[distances > clamping_distance] = clamping_distance
+
+    return distances
+
+
+def write_data_to_file(root_dataset_folder, config, distances, index):
+    # check if the root folder exists, if not create it
+    os.makedirs(root_dataset_folder, exist_ok=True)
+
+    # check if the dataset folder exists
+    os.makedirs(os.path.join(root_dataset_folder, config.category_name), exist_ok=True)
+
+    # open a file to write to and determine a name, maybe look at config?
+    with open(os.path.join(root_dataset_folder, config.category_name, str(index) + ".dist"), "w") as f:
+        # write each distance to the file
+        for distance in distances:
+            f.write(str(distance) + "\n")
+
+    # eventually do the same thing, but for impulses. For now ignore this
+
+
+
+def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True):
+
+    #TODO: write mesh to dataset_folder
+
     # loop over all .pkl files in the folder
-    for filename in os.listdir(folder):
+    for filename in os.listdir(pickle_folder):
+        # get index from the filename
+        # TODO: improve this methodology
+        index = int(filename.split('_')[0])
+
         # load the pickle
-        config = unload_pickle(os.path.join(folder, filename))
+        config = unload_pickle(os.path.join(pickle_folder, filename))
 
         # extract important variables from config
         modes = config.modes
-        mesh = o3d.io.read_triangle_mesh(config.mesh_filename)
+        mesh = load_mesh_from_file(config.mesh_filename)
         mesh.compute_vertex_normals()
+        contact_point = config.contact_point
+        direction = config.direction
+        f = config.f
+        v = config.v
+
 
         # visualize the segmentation stored in modes
-        visualize_labeled_mesh(retrieve_fine_mesh_from_fracture_modes(mesh,modes), modes.fine_vertex_labels_after_impact) # fine
+        if do_visualize:
+            visualize_mesh_with_contact_point(create_mesh_from_faces_and_vertices(f, v), contact_point)
+            visualize_labeled_mesh(retrieve_fine_mesh_from_fracture_modes(mesh,modes), modes.fine_vertex_labels_after_impact) # fine
 
         # visualize the segmentation mapped to the original mesh
         new_labels = map_fine_labels_to_mesh(mesh, modes)
-        visualize_labeled_mesh(mesh, new_labels) # original
+        if do_visualize:
+            visualize_labeled_mesh(mesh, new_labels) # original
 
 
-        #TODO: find a way of determining the points for which a point at a connecting edge has a different label
+        # determine the points for which a point at a connecting edge has a different label
+        edge_labels, edge_set = determine_edge_points(mesh, new_labels)
 
-        #TODO: visualize these points
+        # visualize these points
+        if do_visualize:
+            visualize_labeled_mesh(mesh, edge_labels)
 
-        #TODO: load this information somehow into potpourri3d
+        # use potpourri3d to calculate the geodesic distance from any point to this set of points.
+        distances = calculate_UDF(mesh, edge_set)
 
-        #TODO: use potpourri3d to calculate the geodesic distance from any point to this set of points.
+        # visualize the UDF that was calculated
+        if do_visualize:
+            visualize_UDF(mesh, distances)
 
-        #TODO: visualize the UDF that was calculated
+        # visualize the UDF without any clamping
+        if do_visualize:
+            visualize_UDF(mesh, calculate_UDF(mesh, edge_set, clamping_distance=99999))
 
-        #TODO: OR SOMEHOW USE THE FRACTURE-MODES MESH IN HERE
+        # generate the actual dataset
+        write_data_to_file(root_dataset_folder, config, distances, index)
+
+
+
 
 
 
 
 
 if __name__ == '__main__':
-    folder = "pickled_modes"
-    generate_UDF_dataset(folder)
-    Config() # just here such that I dont do cleanup and remove the import
+    pickle_folder = "pickled_modes"
+    root_dataset_folder = "datasets"
+    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = False)
+    Config(None) # just here such that I dont do cleanup and remove the import, breaking the pickling

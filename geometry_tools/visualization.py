@@ -43,3 +43,58 @@ def visualize_mesh_and_fine_mesh(mesh, modes):
 
     # visualize mesh and fine_mesh
     o3d.visualization.draw_geometries([fine_mesh, mesh])
+
+
+def visualize_UDF(mesh, distances, use_sqrt_ratios=True):
+    """
+    Takes a mesh and a set of distances per vertex and Visualizes these on the mesh.
+    :param mesh: mesh to visualize
+    :param distances: list of distances per vertex
+    :param use_sqrt_ratios: Whether to use square roots to exaggerate differences in distance close to contact points
+    :return: Nothing, opens a window with the visualization
+    """
+    if use_sqrt_ratios:
+        ratios = np.sqrt(distances / np.max(distances))
+    else:
+        ratios = distances / np.max(distances)
+    colors = 1 - (ratios[:, None] * np.array([1.0, 1.0, 1.0]))
+    print(ratios)
+    print(colors)
+
+    mesh.compute_vertex_normals()
+    mesh.vertex_colors = o3d.utility.Vector3dVector(colors)
+
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+
+    # Set camera parameters if needed
+    ctr = vis.get_view_control()
+    ctr.set_front([0, 0, -1])
+    ctr.set_lookat([0, 0, 0])
+    ctr.set_up([0, -1, 0])
+    ctr.set_zoom(0.5)
+
+    # Add mesh to visualizer
+    vis.add_geometry(mesh)
+
+    # Configure to disable all light effects
+    opt = vis.get_render_option()
+    opt.point_size = 1.0
+    opt.background_color = np.array([1.0, 1.0, 1.0])  # White background
+    opt.show_coordinate_frame = False
+    opt.light_on = False
+    opt.mesh_show_wireframe = True
+
+    # Start the visualizer
+    vis.run()
+
+    # Destroy the visualizer window
+    vis.destroy_window()
+
+
+def visualize_mesh_with_contact_point(mesh, contact_point):
+    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+    sphere.compute_vertex_normals()
+
+    sphere.translate(contact_point)
+    o3d.visualization.draw_geometries([sphere, mesh])
