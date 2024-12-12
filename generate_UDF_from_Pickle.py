@@ -1,3 +1,5 @@
+import shutil
+
 import sys
 import numpy as np
 import pickle
@@ -6,6 +8,7 @@ import open3d as o3d
 from scipy.spatial import KDTree
 from generate_UDF_dataset import Config
 import potpourri3d as pp3d
+from tqdm import tqdm
 
 from geometry_tools.mesh_retrieval import retrieve_fine_mesh_from_fracture_modes, load_mesh_from_file, \
     create_mesh_from_faces_and_vertices
@@ -91,6 +94,10 @@ def write_data_to_file(root_dataset_folder, config, distances, index):
     # check if the dataset folder exists
     os.makedirs(os.path.join(root_dataset_folder, config.category_name), exist_ok=True)
 
+    if index == 0:
+        # write mesh to file in dataset
+        shutil.copyfile(config.mesh_filename, os.path.join(root_dataset_folder, config.category_name, config.category_name + ".obj"))
+
     # open a file to write to and determine a name, maybe look at config?
     with open(os.path.join(root_dataset_folder, config.category_name, str(index) + ".dist"), "w") as f:
         # write each distance to the file
@@ -101,12 +108,12 @@ def write_data_to_file(root_dataset_folder, config, distances, index):
 
 
 
-def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True):
+def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=9999999):
 
     #TODO: write mesh to dataset_folder
 
     # loop over all .pkl files in the folder
-    for filename in os.listdir(pickle_folder):
+    for filename in tqdm(os.listdir(pickle_folder)):
         # get index from the filename
         # TODO: improve this methodology
         index = int(filename.split('_')[0])
@@ -153,6 +160,9 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         if do_visualize:
             visualize_UDF(mesh, calculate_UDF(mesh, edge_set, clamping_distance=99999))
 
+
+        distances = calculate_UDF(mesh, edge_set, clamping_distance=clamping_distance)
+
         # generate the actual dataset
         write_data_to_file(root_dataset_folder, config, distances, index)
 
@@ -166,5 +176,6 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
 if __name__ == '__main__':
     pickle_folder = "pickled_modes"
     root_dataset_folder = "datasets"
-    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = False)
-    Config(None) # just here such that I dont do cleanup and remove the import, breaking the pickling
+    clamping_distance = 9999999
+    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = False, clamping_distance=clamping_distance)
+    Config(0) # just here such that I dont do cleanup and remove the import, breaking the pickling
