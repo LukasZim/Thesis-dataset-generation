@@ -120,6 +120,7 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
     for filename in tqdm(os.listdir(pickle_folder)):
         # get index from the filename
         # TODO: improve this methodology
+        print(filename)
         index = int(filename.split('_')[0])
 
         # load the pickle
