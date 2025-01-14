@@ -38,28 +38,28 @@ class Config:
             raise ValueError("Invalid choice. Must be either BUNNY or CHAIR.")
 
     def initialize_bunny(self):
-        self.pcd_downsample_needed = True
-        self.down_sampling_method = "sample_x"
-        self.filename = "/home/lukasz/Documents/thesis_pointcloud/data/stanford_bunny.las"
         self.mesh_filename = "./data/bunny_oded.obj"
         self.output_path = "./results"
-        self.mesh_extraction_needed = False
-        self.mesh_aligning_needed = True
         self.dataset_name = "dataset"
         self.category_name = "bunny"
         self.num_impacts = 100
+        # self.pcd_downsample_needed = True
+        # self.mesh_extraction_needed = False
+        # self.mesh_aligning_needed = True
+        # self.down_sampling_method = "sample_x"
+        # self.filename = "/home/lukasz/Documents/thesis_pointcloud/data/stanford_bunny.las"
 
     def initialize_chair(self):
-        self.pcd_downsample_needed = False
-        self.down_sampling_method = "sample_x"
-        self.filename = "/home/lukasz/Documents/thesis_pointcloud/data/chair/point_cloud.ply"
         self.mesh_filename = "data/chair/chair.obj"
         self.output_path = "./results"
-        self.mesh_extraction_needed = False
-        self.mesh_aligning_needed = False
         self.dataset_name = "dataset"
         self.category_name = "chair"
         self.num_impacts = 100
+        # self.pcd_downsample_needed = False
+        # self.mesh_extraction_needed = False
+        # self.mesh_aligning_needed = False
+        # self.down_sampling_method = "sample_x"
+        # self.filename = "/home/lukasz/Documents/thesis_pointcloud/data/chair/point_cloud.ply"
 
 if __name__ == "__main__":
     BUNNY = 0

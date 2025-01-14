@@ -88,7 +88,7 @@ def calculate_UDF(mesh, edge_set, clamping_distance=0.3):
     return distances
 
 
-def write_data_to_file(root_dataset_folder, config, distances, index, vertices):
+def write_data_to_file(root_dataset_folder, config, distances, index, vertices, impact_point, direction):
     # check if the root folder exists, if not create it
     os.makedirs(root_dataset_folder, exist_ok=True)
 
@@ -105,10 +105,13 @@ def write_data_to_file(root_dataset_folder, config, distances, index, vertices):
     DF_vertices = pd.DataFrame(vertices)
     DF = pd.concat([DF, DF_vertices], axis=1)
     DF.columns = ['distance', 'x', 'y', 'z']
-    filename = str(os.path.join(root_dataset_folder, config.category_name, str(index) + ".csv"))
-    DF.to_csv(filename, index=False)
+    filename = str(os.path.join(root_dataset_folder, config.category_name, str(index) + ".pkl"))
+    DF.to_pickle(filename)
 
-    # eventually do the same thing, but for impulses. For now ignore this
+    DF = pd.DataFrame(np.concatenate((impact_point, direction)).reshape(1, -1))
+    DF.columns = ['x_point', 'y_point', 'z_point', 'x_direction', 'y_direction', 'z_direction']
+    filename = str(os.path.join(root_dataset_folder, config.category_name, str(index) + "_impulse.pkl"))
+    DF.to_pickle(filename)
 
 
 
@@ -169,7 +172,7 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         distances = calculate_UDF(mesh, edge_set, clamping_distance=clamping_distance)
 
         # generate the actual dataset
-        write_data_to_file(root_dataset_folder, config, distances, index, np.asarray(mesh.vertices))
+        write_data_to_file(root_dataset_folder, config, distances, index, np.asarray(mesh.vertices), impact_point=contact_point, direction=direction)
 
 
 
@@ -182,5 +185,5 @@ if __name__ == '__main__':
     pickle_folder = "pickled_modes"
     root_dataset_folder = "datasets"
     clamping_distance = 9999999
-    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=clamping_distance)
+    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = False, clamping_distance=clamping_distance)
     Config(0) # just here such that I dont do cleanup and remove the import, breaking the pickling
