@@ -1,8 +1,7 @@
-import open3d
 import open3d as o3d
 import numpy as np
 
-import generate_dataset
+
 
 index = 0
 

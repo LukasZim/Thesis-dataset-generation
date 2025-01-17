@@ -88,7 +88,7 @@ def calculate_UDF(mesh, edge_set, clamping_distance=0.3):
     return distances
 
 
-def write_data_to_file(root_dataset_folder, config, distances, index, vertices, impact_point, direction):
+def write_data_to_file(root_dataset_folder, config, distances, index, vertices, mesh, impact_point, direction):
     # check if the root folder exists, if not create it
     os.makedirs(root_dataset_folder, exist_ok=True)
 
@@ -113,7 +113,18 @@ def write_data_to_file(root_dataset_folder, config, distances, index, vertices, 
     filename = str(os.path.join(root_dataset_folder, config.category_name, str(index) + "_impulse.pkl"))
     DF.to_pickle(filename)
 
+    # o3d.io.write_triangle_mesh(str(os.path.join(root_dataset_folder, config.category_name, config.category_name + ".obj")), mesh)
 
+
+def rescale_impact_position(position, sim_min, sim_max, mesh_min, mesh_max):
+    point = np.array(position)
+    src_min = np.array(sim_min)
+    src_max = np.array(sim_max)
+    tgt_min = np.array(mesh_min)
+    tgt_max = np.array(mesh_max)
+    # Compute the rescaled point
+    rescaled_point = tgt_min + (point - src_min) / (src_max - src_min) * (tgt_max - tgt_min)
+    return rescaled_point
 
 def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=9999999):
 
@@ -138,11 +149,18 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         f = config.f
         v = config.v
 
+        if do_visualize:
+            visualize_mesh_with_contact_point(create_mesh_from_faces_and_vertices(f, v), contact_point)
+
+        print(contact_point)
+        print(np.max(v, axis=0), np.min(v, axis=0))
+        print(np.max(mesh.vertices, axis=0), np.min(mesh.vertices, axis=0))
+        contact_point = rescale_impact_position(contact_point, np.min(v, axis=0), np.max(v, axis=0), np.min(np.asarray(mesh.vertices), axis=0), np.max(np.asarray(mesh.vertices), axis=0),)
 
         # visualize the segmentation stored in modes
         if do_visualize:
-            visualize_mesh_with_contact_point(create_mesh_from_faces_and_vertices(f, v), contact_point)
-            visualize_labeled_mesh(retrieve_fine_mesh_from_fracture_modes(mesh,modes), modes.fine_vertex_labels_after_impact) # fine
+            # visualize_labeled_mesh(retrieve_fine_mesh_from_fracture_modes(mesh,modes), modes.fine_vertex_labels_after_impact) # fine
+            visualize_mesh_with_contact_point(mesh, contact_point)
 
         # visualize the segmentation mapped to the original mesh
         new_labels = map_fine_labels_to_mesh(mesh, modes)
@@ -172,7 +190,7 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         distances = calculate_UDF(mesh, edge_set, clamping_distance=clamping_distance)
 
         # generate the actual dataset
-        write_data_to_file(root_dataset_folder, config, distances, index, np.asarray(mesh.vertices), impact_point=contact_point, direction=direction)
+        write_data_to_file(root_dataset_folder, config, distances, index, np.asarray(mesh.vertices), mesh, impact_point=contact_point, direction=direction)
 
 
 
