@@ -88,7 +88,7 @@ def calculate_UDF(mesh, edge_set, clamping_distance=0.3):
     return distances
 
 
-def write_data_to_file(root_dataset_folder, config, distances, index, vertices, mesh, impact_point, direction):
+def write_data_to_file(root_dataset_folder, config, distances, index, vertices, mesh, labeling, edge_labels, impact_point, direction):
     # check if the root folder exists, if not create it
     os.makedirs(root_dataset_folder, exist_ok=True)
 
@@ -103,8 +103,10 @@ def write_data_to_file(root_dataset_folder, config, distances, index, vertices, 
     distances = np.reshape(distances, (-1, 1))
     DF = pd.DataFrame(distances)
     DF_vertices = pd.DataFrame(vertices)
-    DF = pd.concat([DF, DF_vertices], axis=1)
-    DF.columns = ['distance', 'x', 'y', 'z']
+    DF_labels = pd.DataFrame(labeling)
+    DF_edge_labels = pd.DataFrame(edge_labels)
+    DF = pd.concat([DF_labels, DF_edge_labels, DF, DF_vertices], axis=1)
+    DF.columns = ['label', 'edge_labels', 'distance', 'x', 'y', 'z']
     filename = str(os.path.join(root_dataset_folder, config.category_name, str(index) + ".pkl"))
     DF.to_pickle(filename)
 
@@ -143,9 +145,10 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         # extract important variables from config
         modes = config.modes
         mesh = load_mesh_from_file(config.mesh_filename)
-        mesh.compute_vertex_normals()
+
         contact_point = config.contact_point
         direction = config.direction
+
         f = config.f
         v = config.v
 
@@ -190,7 +193,7 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         distances = calculate_UDF(mesh, edge_set, clamping_distance=clamping_distance)
 
         # generate the actual dataset
-        write_data_to_file(root_dataset_folder, config, distances, index, np.asarray(mesh.vertices), mesh, impact_point=contact_point, direction=direction)
+        write_data_to_file(root_dataset_folder, config, distances, index, np.asarray(mesh.vertices), mesh, new_labels, edge_labels, impact_point=contact_point, direction=direction)
 
 
 

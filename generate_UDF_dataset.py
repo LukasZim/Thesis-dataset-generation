@@ -14,7 +14,7 @@ def extract_mesh_from_obj_file(mesh_filename):
 
 
 class Config:
-    def __init__(self, choice):
+    def __init__(self, choice, size=100):
         if True:
             self.dataset_size = None
             self.category_name = None
@@ -31,30 +31,30 @@ class Config:
 
         # Initialize configuration based on choice
         if choice == self.BUNNY:
-            self.initialize_bunny()
+            self.initialize_bunny(size)
         elif choice == self.CHAIR:
-            self.initialize_chair()
+            self.initialize_chair(size)
         else:
             raise ValueError("Invalid choice. Must be either BUNNY or CHAIR.")
 
-    def initialize_bunny(self):
+    def initialize_bunny(self, size):
         self.mesh_filename = "./data/bunny_oded.obj"
         self.output_path = "./results"
         self.dataset_name = "dataset"
         self.category_name = "bunny"
-        self.num_impacts = 100
+        self.num_impacts = size
         # self.pcd_downsample_needed = True
         # self.mesh_extraction_needed = False
         # self.mesh_aligning_needed = True
         # self.down_sampling_method = "sample_x"
         # self.filename = "/home/lukasz/Documents/thesis_pointcloud/data/stanford_bunny.las"
 
-    def initialize_chair(self):
+    def initialize_chair(self, size):
         self.mesh_filename = "data/chair/chair.obj"
         self.output_path = "./results"
         self.dataset_name = "dataset"
         self.category_name = "chair"
-        self.num_impacts = 100
+        self.num_impacts = size
         # self.pcd_downsample_needed = False
         # self.mesh_extraction_needed = False
         # self.mesh_aligning_needed = False
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     BUNNY = 0
     CHAIR = 1
     choice = BUNNY
-    config = Config(choice)
+    config = Config(choice, size=1000)
 
 
     mesh = extract_mesh_from_obj_file(config.mesh_filename)
