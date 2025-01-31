@@ -9,5 +9,6 @@
     <orderEntry type="module" module-name="pointnet.pytorch" />
     <orderEntry type="module" module-name="test" />
     <orderEntry type="module" module-name="gaussian-splatting" />
+    <orderEntry type="module" module-name="deltaconv" />
   </component>
 </module>

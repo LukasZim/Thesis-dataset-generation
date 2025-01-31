@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$USER_HOME$/anaconda3/envs/pointnet.pytorch/lib/python3.9/site-packages/deltaconv/.idea/deltaconv.iml" filepath="$USER_HOME$/anaconda3/envs/pointnet.pytorch/lib/python3.9/site-packages/deltaconv/.idea/deltaconv.iml" />
       <module fileurl="file://$PROJECT_DIR$/../pointnet.pytorch/.idea/pointnet.pytorch.iml" filepath="$PROJECT_DIR$/../pointnet.pytorch/.idea/pointnet.pytorch.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/thesis_pointcloud.iml" filepath="$PROJECT_DIR$/.idea/thesis_pointcloud.iml" />
     </modules>
