@@ -2,3 +2,6 @@ dataset
 results
 .idea
 /datasets/
+/datasets/bunny1/
+
+*.pkl
