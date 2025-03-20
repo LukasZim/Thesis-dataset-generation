@@ -65,14 +65,9 @@ def visualize_UDF(mesh, distances, use_sqrt_ratios=True):
     mesh.vertex_colors = o3d.utility.Vector3dVector(colors)
 
     vis = o3d.visualization.Visualizer()
-    vis.create_window()
+    vis.create_window(width=1840, height=849)
 
-    # Set camera parameters if needed
-    ctr = vis.get_view_control()
-    ctr.set_front([0, 0, -1])
-    ctr.set_lookat([0, 0, 0])
-    ctr.set_up([0, -1, 0])
-    ctr.set_zoom(0.5)
+
 
     # Add mesh to visualizer
     vis.add_geometry(mesh)
@@ -85,8 +80,18 @@ def visualize_UDF(mesh, distances, use_sqrt_ratios=True):
     opt.light_on = False
     opt.mesh_show_wireframe = True
 
+    # Set camera parameters if needed
+    ctr = vis.get_view_control()
+    parameters = o3d.io.read_pinhole_camera_parameters("ScreenCamera.json")
+    ctr.convert_from_pinhole_camera_parameters(parameters)
+
+
     # Start the visualizer
     vis.run()
+
+    # Save a screenshot
+    vis.capture_screen_image("screenshot.png", do_render=True)
+
 
     # Destroy the visualizer window
     vis.destroy_window()

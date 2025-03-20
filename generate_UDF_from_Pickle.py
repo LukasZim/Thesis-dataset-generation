@@ -206,5 +206,5 @@ if __name__ == '__main__':
     pickle_folder = "pickled_modes"
     root_dataset_folder = "datasets"
     clamping_distance = 9999999
-    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = False, clamping_distance=clamping_distance)
+    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=clamping_distance)
     Config(0) # just here such that I dont do cleanup and remove the import, breaking the pickling
