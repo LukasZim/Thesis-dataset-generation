@@ -10,8 +10,8 @@ if __name__ == "__main__":
     ps.init()
     ps.set_window_size(1920, 1080)
 
-    root_path = "./datasets/bunny"
-    object_path = os.path.join(root_path, "bunny.obj")
+    root_path = "./datasets/vase"
+    object_path = os.path.join(root_path, "vase.obj")
     index = 71
     udf_path = os.path.join(root_path, f"{index}.pkl")
     impulse_path = os.path.join(root_path, f"{index}_impulse.pkl")
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # load data from pkl files
     df = pd.read_pickle(udf_path)
 
-    vertices = df.drop("distance", axis=1).values
+    vertices = df.drop(["distance", 'label', 'edge_labels'], axis=1).values
     udf = df["distance"].values
 
     df = pd.read_pickle(impulse_path)

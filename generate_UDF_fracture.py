@@ -7,6 +7,7 @@ import igl
 import tetgen
 import open3d as o3d
 
+from MLP.visualize import create_mesh_from_faces_and_vertices
 from fracture_modes import fracture_utility as fracture
 # import fracture_utility as fracture
 from gpytoolbox.copyleft import lazy_cage
@@ -123,10 +124,11 @@ def generate_multiple_fracture_modes(modes, v, f, mesh, config,
     all_labels = np.zeros((modes.precomputed_num_pieces, config.num_impacts), dtype=int)
     running_num = 0
     num_tries = 0
+    normals_mesh = create_mesh_from_faces_and_vertices(f, v)
     for i in range(P.shape[0]):
         num_tries += 1
         contact_point = P[i, :]
-        direction = mesh.triangle_normals[FI[i]]
+        direction = normals_mesh.triangle_normals[FI[i]]
         # direction =  -np.copy(contact_point) / np.linalg.norm(np.copy(contact_point))
         modes.impact_projection(contact_point=contact_point, direction=direction, threshold=sigmas[i],
                                 num_modes_used=20)
