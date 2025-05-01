@@ -80,10 +80,14 @@ def calculate_UDF(mesh, edge_set, clamping_distance=0.3):
     vertices = np.asarray(mesh.vertices)
     faces = np.asarray(mesh.triangles)
     # Initialize the geodesic solver
-    solver = pp3d.MeshHeatMethodDistanceSolver(vertices, faces)
+    # solver = pp3d.MeshHeatMethodDistanceSolver(vertices, faces)
+    #
+    # distances = np.abs(np.array(solver.compute_distance_multisource(edge_set)))
+    # distances[distances > clamping_distance] = clamping_distance
 
-    distances = np.abs(np.array(solver.compute_distance_multisource(edge_set)))
-    distances[distances > clamping_distance] = clamping_distance
+    edge_set_positions = np.array(vertices[edge_set])
+    distances = np.min(np.linalg.norm(vertices[:, np.newaxis, :] - edge_set_positions[np.newaxis, :, :], axis=2), axis=1)
+
 
     return distances
 
@@ -135,7 +139,6 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
     # loop over all .pkl files in the folder
     for filename in tqdm(os.listdir(pickle_folder)):
         # get index from the filename
-        # TODO: improve this methodology
         print(filename)
         index = int(filename.split('_')[0])
 

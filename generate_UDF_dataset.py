@@ -30,6 +30,7 @@ class Config:
             self.BUNNY = 0
             self.CHAIR = 1
             self.VASE = 2
+            self.BUNNY_NON_GEODESIC = 3
 
         # Initialize configuration based on choice
         if choice == self.BUNNY:
@@ -38,6 +39,8 @@ class Config:
             self.initialize_chair(size)
         elif choice == self.VASE:
             self.initialize_vase(size)
+        elif choice == self.BUNNY_NON_GEODESIC:
+            self.initialize_bunny_non_geodesic(size)
         else:
             raise ValueError("Invalid choice. Must be either BUNNY or CHAIR.")
 
@@ -47,11 +50,14 @@ class Config:
         self.dataset_name = "dataset"
         self.category_name = "bunny"
         self.num_impacts = size
-        # self.pcd_downsample_needed = True
-        # self.mesh_extraction_needed = False
-        # self.mesh_aligning_needed = True
-        # self.down_sampling_method = "sample_x"
-        # self.filename = "/home/lukasz/Documents/thesis_pointcloud/data/stanford_bunny.las"
+
+    def initialize_bunny_non_geodesic(self, size):
+        self.mesh_filename = "./data/bunny_oded.obj"
+        self.output_path = "./results"
+        self.dataset_name = "dataset"
+        self.category_name = "bunny_non_geodesic"
+        self.num_impacts = size
+
 
     def initialize_chair(self, size):
         self.mesh_filename = "data/chair/chair.obj"
@@ -76,7 +82,8 @@ if __name__ == "__main__":
     BUNNY = 0
     CHAIR = 1
     VASE = 2
-    choice = VASE
+    BUNNY_NON_GEODESIC = 3
+    choice = BUNNY_NON_GEODESIC
     config = Config(choice, size=1000)
 
 
