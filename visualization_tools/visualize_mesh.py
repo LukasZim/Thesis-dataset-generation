@@ -12,5 +12,5 @@ def get_mesh_from_file(path):
 
 if __name__ == "__main__" :
     mesh = get_mesh_from_file("../data/chair/chair.obj")
-    pcd = get_pcd_ply("../data/chair/point_cloud.ply")
-    o3d.visualization.draw_geometries([mesh, pcd])
+    # pcd = get_pcd_ply("../data/chair/point_cloud.ply")
+    o3d.visualization.draw_geometries([mesh, ])

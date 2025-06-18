@@ -107,7 +107,7 @@ if __name__ == "__main__":
     print("done generating modes")
 
     print(mesh.get_center())
-    # o3d.visualization.draw_geometries([mesh, pcd])
+    # o3d.visualization.draw_geometries([mesh, ])
 
     generate_UDF_fracture.generate_multiple_fracture_modes(modes, v=v, f=f,mesh=mesh, config=config)
 

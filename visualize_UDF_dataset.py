@@ -10,8 +10,8 @@ if __name__ == "__main__":
     ps.init()
     ps.set_window_size(1920, 1080)
 
-    root_path = "./datasets/vase"
-    object_path = os.path.join(root_path, "vase.obj")
+    root_path = "./datasets/bunny"
+    object_path = os.path.join(root_path, "bunny.obj")
     index = 71
     udf_path = os.path.join(root_path, f"{index}.pkl")
     impulse_path = os.path.join(root_path, f"{index}_impulse.pkl")

@@ -135,9 +135,13 @@ def rescale_impact_position(position, sim_min, sim_max, mesh_min, mesh_max):
 def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=9999999):
 
     #TODO: write mesh to dataset_folder
-
+    count = 0
     # loop over all .pkl files in the folder
     for filename in tqdm(os.listdir(pickle_folder)):
+        count+=1
+        if count < 14:
+            continue
+
         # get index from the filename
         print(filename)
         index = int(filename.split('_')[0])
@@ -170,8 +174,13 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
 
         # visualize the segmentation mapped to the original mesh
         new_labels = map_fine_labels_to_mesh(mesh, modes)
+        # Define 90-degree rotation matrix around Z-axis
+        R = mesh.get_rotation_matrix_from_axis_angle([0, -np.pi / 4, 0])
+
+        # Apply rotation
+        mesh.rotate(R, center=(0, 0, 0))
         if do_visualize:
-            visualize_labeled_mesh(mesh, new_labels) # original
+            visualize_labeled_mesh(mesh, new_labels, filename="labels.png") # original
 
 
         # determine the points for which a point at a connecting edge has a different label
@@ -179,14 +188,14 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
 
         # visualize these points
         if do_visualize:
-            visualize_labeled_mesh(mesh, edge_labels)
+            visualize_labeled_mesh(mesh, edge_labels, filename="edge_labels.png")
 
         # use potpourri3d to calculate the geodesic distance from any point to this set of points.
         distances = calculate_UDF(mesh, edge_set)
 
         # visualize the UDF that was calculated
         if do_visualize:
-            visualize_UDF(mesh, distances)
+            visualize_UDF(mesh, distances, contact_point=contact_point)
 
         # visualize the UDF without any clamping
         if do_visualize:
@@ -209,5 +218,5 @@ if __name__ == '__main__':
     pickle_folder = "pickled_modes"
     root_dataset_folder = "datasets"
     clamping_distance = 9999999
-    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = False, clamping_distance=clamping_distance)
+    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=clamping_distance)
     Config(0) # just here such that I dont do cleanup and remove the import, breaking the pickling
