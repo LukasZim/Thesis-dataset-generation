@@ -10,9 +10,9 @@ if __name__ == "__main__":
     ps.init()
     ps.set_window_size(1920, 1080)
 
-    root_path = "./datasets/bunny"
-    object_path = os.path.join(root_path, "bunny.obj")
-    index = 71
+    root_path = "./datasets/vase"
+    object_path = os.path.join(root_path, "vase.obj")
+    index = 1
     udf_path = os.path.join(root_path, f"{index}.pkl")
     impulse_path = os.path.join(root_path, f"{index}_impulse.pkl")
 
@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
     vertices = df.drop(["distance", 'label', 'edge_labels'], axis=1).values
     udf = df["distance"].values
+    labels = df['label'].values
 
     df = pd.read_pickle(impulse_path)
     impulse = df.values[0]
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     # load data into polyscope
     ps.register_surface_mesh("mesh", vertices, faces, smooth_shade=True)
     ps.get_surface_mesh("mesh").add_scalar_quantity("UDF", udf, defined_on="vertices", enabled=True)
-
+    ps.get_surface_mesh("mesh").add_scalar_quantity("labels", labels, defined_on="vertices", enabled=True)
     impact_point = impulse[:3].reshape(-1, 3)
     ps.register_point_cloud("impact point", impact_point, enabled=True)
 

@@ -31,6 +31,8 @@ class Config:
             self.CHAIR = 1
             self.VASE = 2
             self.BUNNY_NON_GEODESIC = 3
+            self.BUNNY_3X = 4
+            self.BUNNY_9X = 5
 
         # Initialize configuration based on choice
         if choice == self.BUNNY:
@@ -41,6 +43,10 @@ class Config:
             self.initialize_vase(size)
         elif choice == self.BUNNY_NON_GEODESIC:
             self.initialize_bunny_non_geodesic(size)
+        elif choice == self.BUNNY_3X:
+            self.initialize_bunny_3x(size)
+        elif choice == self.BUNNY_9X:
+            self.initialize_bunny_9x(size)
         else:
             raise ValueError("Invalid choice. Must be either BUNNY or CHAIR.")
 
@@ -49,6 +55,20 @@ class Config:
         self.output_path = "./results"
         self.dataset_name = "dataset"
         self.category_name = "bunny"
+        self.num_impacts = size
+
+    def initialize_bunny_3x(self, size):
+        self.mesh_filename = "./data/bunny_3x.obj"
+        self.output_path = "./results"
+        self.dataset_name = "dataset"
+        self.category_name = "bunny_3x"
+        self.num_impacts = size
+
+    def initialize_bunny_9x(self, size):
+        self.mesh_filename = "./data/bunny_9x.obj"
+        self.output_path = "./results"
+        self.dataset_name = "dataset"
+        self.category_name = "bunny_9x"
         self.num_impacts = size
 
     def initialize_bunny_non_geodesic(self, size):
@@ -83,7 +103,9 @@ if __name__ == "__main__":
     CHAIR = 1
     VASE = 2
     BUNNY_NON_GEODESIC = 3
-    choice = BUNNY_NON_GEODESIC
+    BUNNY_3X = 4
+    BUNNY_9X = 5
+    choice = BUNNY_9X
     config = Config(choice, size=1000)
 
 

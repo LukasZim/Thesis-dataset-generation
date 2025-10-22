@@ -80,13 +80,13 @@ def calculate_UDF(mesh, edge_set, clamping_distance=0.3):
     vertices = np.asarray(mesh.vertices)
     faces = np.asarray(mesh.triangles)
     # Initialize the geodesic solver
-    # solver = pp3d.MeshHeatMethodDistanceSolver(vertices, faces)
-    #
-    # distances = np.abs(np.array(solver.compute_distance_multisource(edge_set)))
+    solver = pp3d.MeshHeatMethodDistanceSolver(vertices, faces)
+
+    distances = np.abs(np.array(solver.compute_distance_multisource(edge_set)))
     # distances[distances > clamping_distance] = clamping_distance
 
-    edge_set_positions = np.array(vertices[edge_set])
-    distances = np.min(np.linalg.norm(vertices[:, np.newaxis, :] - edge_set_positions[np.newaxis, :, :], axis=2), axis=1)
+    # edge_set_positions = np.array(vertices[edge_set])
+    # distances = np.min(np.linalg.norm(vertices[:, np.newaxis, :] - edge_set_positions[np.newaxis, :, :], axis=2), axis=1)
 
 
     return distances
@@ -135,12 +135,10 @@ def rescale_impact_position(position, sim_min, sim_max, mesh_min, mesh_max):
 def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=9999999):
 
     #TODO: write mesh to dataset_folder
-    count = 0
     # loop over all .pkl files in the folder
+
+    write_index = 0
     for filename in tqdm(os.listdir(pickle_folder)):
-        count+=1
-        if count < 14:
-            continue
 
         # get index from the filename
         print(filename)
@@ -162,9 +160,9 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         if do_visualize:
             visualize_mesh_with_contact_point(create_mesh_from_faces_and_vertices(f, v), contact_point)
 
-        print(contact_point)
-        print(np.max(v, axis=0), np.min(v, axis=0))
-        print(np.max(mesh.vertices, axis=0), np.min(mesh.vertices, axis=0))
+        # print(contact_point)
+        # print(np.max(v, axis=0), np.min(v, axis=0))
+        # print(np.max(mesh.vertices, axis=0), np.min(mesh.vertices, axis=0))
         contact_point = rescale_impact_position(contact_point, np.min(v, axis=0), np.max(v, axis=0), np.min(np.asarray(mesh.vertices), axis=0), np.max(np.asarray(mesh.vertices), axis=0),)
 
         # visualize the segmentation stored in modes
@@ -185,7 +183,10 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
 
         # determine the points for which a point at a connecting edge has a different label
         edge_labels, edge_set = determine_edge_points(mesh, new_labels)
-
+        if not 1 in edge_labels:
+            print(edge_labels)
+            print(np.mean(edge_labels))
+            continue
         # visualize these points
         if do_visualize:
             visualize_labeled_mesh(mesh, edge_labels, filename="edge_labels.png")
@@ -205,8 +206,9 @@ def generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True
         distances = calculate_UDF(mesh, edge_set, clamping_distance=clamping_distance)
 
         # generate the actual dataset
-        write_data_to_file(root_dataset_folder, config, distances, index, np.asarray(mesh.vertices), mesh, new_labels, edge_labels, impact_point=contact_point, direction=direction)
+        write_data_to_file(root_dataset_folder, config, distances, write_index, np.asarray(mesh.vertices), mesh, new_labels, edge_labels, impact_point=contact_point, direction=direction)
 
+        write_index += 1
 
 
 
@@ -218,5 +220,5 @@ if __name__ == '__main__':
     pickle_folder = "pickled_modes"
     root_dataset_folder = "datasets"
     clamping_distance = 9999999
-    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = True, clamping_distance=clamping_distance)
+    generate_UDF_dataset(pickle_folder, root_dataset_folder, do_visualize = False, clamping_distance=clamping_distance)
     Config(0) # just here such that I dont do cleanup and remove the import, breaking the pickling
