@@ -63,7 +63,11 @@ The machine learning and evaluation code is available in the companion repositor
 
 **Learning Unsigned Distance Fields to Simulate Brittle Fractures in Real-Time**  
 MSc Computer Science, TU Delft  
-Author: Lukas Kai Zimmerhackl
+Author: Lukas Kai Zimmerhackl  
+
+The thesis paper is available through the TU Delft Repository:
+
+- [View thesis paper](https://repository.tudelft.nl/record/uuid:8c741d2d-11e9-4c65-803c-3357da66f543)
 
 ## Keywords
 
