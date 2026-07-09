@@ -57,7 +57,7 @@ The learning, evaluation, and segmentation stages are handled in the companion r
 
 The machine learning and evaluation code is available in the companion repository:
 
-- [`pointnet.pytorch`](https://github.com/LukasZim/pointnet.pytorch)
+- [`Thesis-Fracture-Prediction`](https://github.com/LukasZim/pointnet.pytorch)
 
 ## Thesis
 
